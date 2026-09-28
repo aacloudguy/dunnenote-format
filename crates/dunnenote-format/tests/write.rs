@@ -544,7 +544,7 @@ fn writing_empties_the_search_index_so_dunnenote_rebuilds_it() {
 fn every_written_notebook_verifies_clean_and_reads_back() {
     let dir = TempDir::new().unwrap();
     let built = written::build_all(dir.path()).unwrap();
-    assert_eq!(built.len(), 4);
+    assert_eq!(built.len(), 5);
     for (name, root) in &built {
         assert_clean(root);
         assert_eq!(

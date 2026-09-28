@@ -19,10 +19,11 @@ editable.
 | Library: export to JSON, Markdown and CSV | available (pre-release) |
 | Library: create notebooks; write sections, pages, rich text, sketches, pictures, picture markup, canvas groups | available (pre-release) |
 | Library: write tables (import CSV/JSON, blank Editable tables, edit rows and columns) | available (pre-release) |
-| Library: write forms, calendars, tags, archive, templates, captions API | planned |
+| Library: forms (fields, new form, submit to an answers table with carriers), captions, page settings | available (pre-release) |
+| Library: write calendars, tags, archive, templates | planned |
 | `dnfmt inspect`, `ls`, `cat`, `verify`, `export` | available (pre-release) |
-| `dnfmt new`, `add-section`, `add-page`, `add-canvas rich-text\|sketch\|picture\|table`, `table` | available (pre-release) |
-| `dnfmt tag`, `archive`, `form submit`, `add-canvas` for calendars | planned |
+| `dnfmt new`, `add-section`, `add-page`, `add-canvas rich-text\|sketch\|picture\|table`, `table`, `form`, `caption` | available (pre-release) |
+| `dnfmt tag`, `archive`, `template`, `add-canvas` for calendars | planned |
 | `SPEC.md` — full specification with a writer checklist | in progress |
 | Golden test notebooks produced by DunneNote itself ([fixtures](fixtures/README.md)) | available |
 
@@ -65,7 +66,15 @@ dnfmt add-canvas ~/Notes/Trip.dunnenote "$P" sketch strokes.json --size=400,300
 dnfmt add-canvas ~/Notes/Trip.dunnenote "$P" table bookings.csv    # a Data Table
 T=$(dnfmt add-canvas ~/Notes/Trip.dunnenote "$P" table)             # an empty Editable table
 dnfmt table ~/Notes/Trip.dunnenote "$T" add-row "Column 1=Tent" "Column 2=2"
+
+F=$(dnfmt form ~/Notes/Trip.dunnenote new "$S" --name="Check-in")   # a form and its answers table
+dnfmt form ~/Notes/Trip.dunnenote field <canvas-id> --name=Guest --required
+dnfmt form ~/Notes/Trip.dunnenote submit "$F" "Guest=Ada Lovelace"  # appends one answers row
 ```
+
+A form submitted with `dnfmt` or the library goes to an answers table. Forms that send their
+answers to a document or a file are submitted in DunneNote, and a calendar field must have a day
+chosen (its `displayDayEpoch`).
 
 Or from Rust:
 

@@ -12,10 +12,10 @@ The key words MUST, MUST NOT, SHOULD and MAY are to be interpreted as described 
 4. Schema: `schema/v18.sql` is normative; table-by-table semantics *(to be written)*
 5. Identifiers, sibling positions, timestamps — [below](#5-identifiers-sibling-positions-timestamps)
 6. Blobs: addressing, sentinel blobs, reference counts — [below](#6-blobs)
-7. Canvases: common columns, settings merge rule, reserved settings keys *(to be written)*
+7. Canvases: settings merge rule and reserved settings keys — [below](#7-canvas-and-page-settings)
 8. Payloads: rich text and sketch [below](#8-payloads-rich-text-and-sketch); tables
    [below](#tables); calendar, per-kind settings *(to be written)*
-9. Roles: captions, forms, templates *(to be written)*
+9. Roles: captions and forms [below](#9-roles-captions-and-forms); templates *(to be written)*
 10. Groups, layering, archive *(to be written)*
 11. Tags and metadata, fold v1 *(to be written)*
 12. The search index as a derived cache *(to be written)*
@@ -61,6 +61,33 @@ The key words MUST, MUST NOT, SHOULD and MAY are to be interpreted as described 
 
   Sentinels are ordinary blobs (file and row) created the first time they are needed.
 - Unused blobs (refcount 0) are reclaimed by DunneNote. Other writers MUST NOT delete blobs.
+
+## 7. Canvas and page settings
+
+- **Canvas settings** (`canvas_instances.settings`) are a JSON object of at most 64 KiB. A writer
+  changing them MUST merge: set the keys it changes, remove a key only by name, and keep every
+  other key — including keys it does not know — in place. It MUST NOT re-serialize a subset.
+- **Page settings** (`nodes.settings`, pages only) are NULL until set. DunneNote writes the keys it
+  does not know first, in their stored order, then its own keys in this order, each only when it
+  is not the default: `hideCanvasFrames` (`true`), `formTabOrder` (a non-empty array of canvas
+  ids), `formFillMode` (`true`), `formDestination`, `formLabelDisplay`, `hideSubmittedColumn`
+  (`true`), `dateDisplayFormat` (`iso`, `dmy`, `mdy`, `numeric-dmy` or `numeric-mdy`). When nothing
+  is left the column is set back to NULL. The legacy `formTargetId` (a canvas id) is read as a
+  canvas `formDestination` when that key is absent, and is never written.
+- **Reserved canvas keys.** A reader treats a key whose value does not have the shape below as
+  absent. Flags count only as the literal `true`.
+
+  | Key | Value | Meaning |
+  | --- | --- | --- |
+  | `hidden` | `true` | Not drawn on the page (form answer carriers, §9) |
+  | `formField` | `{"name", "label"?, "required"?, "labelDisplay"?}` | A form field (§9) |
+  | `formTarget` | `{"ownedByForm"?: true}` | A form's answers table (§9) |
+  | `caption` | `{"anchor": <picture id>, "placement"}` | A caption (§9) |
+  | `backgroundTransparent` | `true` | No background fill |
+  | `frameOutlineHidden` | `true` | No frame outline |
+  | `placeholder` | `true` | A template's cleared picture or calendar |
+  | `templateKeepContent` | `true` | Keeps its content when its page is made a template |
+  | `alt` | string | A picture's alternative text |
 
 ## 8. Payloads: rich text and sketch
 
@@ -137,6 +164,55 @@ A table canvas is either a **Data Table** (`kind = 'database'`) or an **Editable
   matches `-?[0-9]+(\.[0-9]+)?` (written as JavaScript writes numbers: `7`, not `7.0`), as `""`
   when blank, and otherwise as the text exactly as typed.
 
+## 9. Roles: captions and forms
+
+### Captions
+
+A caption is a Rich Text canvas whose settings carry `caption: {"anchor": <picture canvas id>,
+"placement": …}` and that is in the same canvas group as that picture. `placement` is `bottom`,
+`top`, `corner-tl`, `corner-tr`, `corner-bl`, `corner-br`, `movie` or `user` (placed by hand).
+DunneNote adds one with `backgroundTransparent: true`, 48 px high across the bottom of the
+picture (inside its frame), on the layer above the picture (`max(top layer, picture z_index + 1)`),
+grouping the two (the picture's existing group, or a new one), and writes the `caption` key last.
+A picture may have several captions.
+
+### Forms
+
+- **Fields.** A form is a page. Each canvas whose settings carry `formField` is a field:
+  `{"name": …}` then, only when set, `"label"` (omitted when equal to the name), `"required": true`
+  and `"labelDisplay"` (`off`, `hover`, `above` or `below`; the page default is
+  `formLabelDisplay`). Names and labels are trimmed and at most 128 UTF-16 code units. A table
+  cannot be a field. Hidden and archived canvases are not part of the form.
+- **Order.** Fields are read in `formTabOrder` order (ids no longer on the page are skipped,
+  repeats count once), then the remaining canvases in layer order.
+- **Destination.** The page's `formDestination` is `{"kind":"canvas","id"}` (an answers table, or
+  a Rich Text canvas the answers are appended to), `{"kind":"file","format"}` or
+  `{"kind":"external","format","path"}` (`format` is `json`, `markdown` or `csv`). A new form's
+  answers table is an empty Editable table with settings `{"formTarget":{"ownedByForm":true}}`.
+- **Submitting to a table** appends exactly one row. The steps, in DunneNote's order:
+  1. Refuse when the page has no field; when a field is named `Submitted` (trimmed, any case);
+     when two fields share a name ignoring case; when a field's content cannot be read; when a
+     required field's answer is empty.
+  2. Each field's answer is text: a Rich Text field gives the text of its text nodes, with a
+     space after every node that has content, whitespace runs collapsed to one space and the
+     result trimmed; a Calendar field gives the displayed day (`displayDayEpoch`, a local
+     midnight) as `YYYY-MM-DD`; an empty sketch, or a picture that is a template placeholder,
+     gives `""`.
+  3. Answers go to the column whose name matches the field's name ignoring case (the first such
+     column). When the table's `formTarget` has `ownedByForm`, missing columns are added — type
+     `date` for a calendar field, otherwise `text` — and, if absent, a `Submitted` column of type
+     `text`; DunneNote asks before adding columns to a table that already has rows. Otherwise a
+     missing column refuses the submission.
+  4. A drawn answer (a sketch with strokes) or a picture answer is copied into a **carrier**: a
+     new canvas on the form's page with settings `{"hidden":true}`, the field's frame and layer
+     (`z_index`), holding the sketch document byte for byte, or pointing at the same picture
+     blob. The cell holds the token `sketch:<carrier id>` or `picture:<carrier id>`. Carriers are
+     real content: readers MUST NOT treat them as orphans, and exports that skip hidden canvases
+     still resolve tokens through them.
+  5. The row's cells are all strings: the text answers in field order, then `Submitted` (the
+     submission time as RFC 3339 with the submitter's UTC offset, e.g.
+     `2026-01-05T09:30:00+01:00`), then the carrier tokens.
+
 ## 13. Writer checklist
 
 A conforming **Writer**:
@@ -168,6 +244,8 @@ A conforming **Writer**:
 13. Changes only Editable tables, never Data Tables; keeps every row's `cells` to scalars under
     existing column keys; and recounts `datasets.row_count` whenever it adds or removes a row
     ([Tables](#tables)).
+14. Writes page settings as §7 describes, and gives every form submission its own carrier canvases
+    and one appended row (§9).
 
 `dunnenote-format` implements this checklist; its conformance suite includes notebooks it writes
 being opened by DunneNote's own code, health-checked with no findings, and read back field for
@@ -190,13 +268,6 @@ sections above:
   that no longer exists; writers SHOULD NOT use it.
 - **Layering.** New canvases go into the top `z_index` (0 on a fresh page) and take the next
   `z_minor`, so a page's canvases share one major layer until the user moves one.
-- **Forms.** A field is a canvas whose settings carry `formField` (`name`, and `label`,
-  `required`, `labelDisplay` only when not the default). The answers table is an Editable table
-  whose settings carry `formTarget: {"ownedByForm": true}`. The page's settings name it with
-  `formDestination: {"kind": "canvas", "id": …}` and give the field order in `formTabOrder`.
-  Each submission is one table row; the reserved `Submitted` column holds an RFC 3339 time with
-  offset. A drawn answer is stored as the cell text `sketch:<id>` pointing at a canvas with
-  `hidden: true`, which is real content and not an orphan.
 - **Templates.** A template page has `is_template = 1` and its name ends in ` (template)`.
   Pictures in it point at the placeholder sentinel blob with settings `{"placeholder": true}`;
   text canvases keep their content only when their settings carry `templateKeepContent: true`.

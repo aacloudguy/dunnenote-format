@@ -320,7 +320,94 @@ pub fn verify(nb: &Notebook, level: VerifyLevel) -> Result<Report> {
         );
     }
 
-    // 8. Search index: a cache; being empty is normal (DunneNote rebuilds it on open).
+    // 8. Roles: captions point at a picture in their group; forms name canvases that exist;
+    //    answer tokens (`sketch:<id>`, `picture:<id>`) point at hidden carrier canvases.
+    r.checks_run.push("roles");
+    let placed: HashMap<String, (String, String, Option<String>, Value)> = conn
+        .prepare("SELECT id, kind, page_id, group_id, settings FROM canvas_instances")?
+        .query_map([], |row| {
+            let settings: String = row.get(4)?;
+            Ok((
+                row.get::<_, String>(0)?,
+                (
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                    serde_json::from_str(&settings).unwrap_or(Value::Null),
+                ),
+            ))
+        })?
+        .collect::<rusqlite::Result<_>>()?;
+    for (id, (_, _, group, settings)) in &placed {
+        let Some(map) = settings.as_object() else {
+            continue;
+        };
+        let Some((anchor, _)) = crate::settings_keys::read_caption(map) else {
+            continue;
+        };
+        match placed.get(&anchor) {
+            Some((kind, _, anchor_group, _)) if kind == "picture" && anchor_group == group => {}
+            _ => r.add(
+                Severity::Warning,
+                "roles",
+                format!("caption {id} does not share a group with a picture {anchor}"),
+            ),
+        }
+    }
+    let pages: Vec<(String, String)> = conn
+        .prepare("SELECT id, settings FROM nodes WHERE kind = 'page' AND settings IS NOT NULL")?
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+        .collect::<rusqlite::Result<_>>()?;
+    for (page, settings) in &pages {
+        let Ok(Value::Object(map)) = serde_json::from_str::<Value>(settings) else {
+            r.add(
+                Severity::Warning,
+                "roles",
+                format!("page {page} settings are not a JSON object"),
+            );
+            continue;
+        };
+        if let Some(crate::settings_keys::FormDestination::Canvas(target)) =
+            crate::settings_keys::read_form_destination(&map)
+        {
+            if !placed.contains_key(&target) {
+                r.add(
+                    Severity::Warning,
+                    "roles",
+                    format!("form page {page} sends its answers to missing canvas {target}"),
+                );
+            }
+        }
+    }
+    let tokens: Vec<(String, String)> = conn
+        .prepare(
+            "SELECT d.instance_id, j.value FROM dataset_rows r JOIN datasets d ON d.id = r.dataset_id, \
+               json_each(r.cells) j \
+             WHERE j.type = 'text' AND (j.value LIKE 'sketch:%' OR j.value LIKE 'picture:%')",
+        )?
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+        .collect::<rusqlite::Result<_>>()?;
+    for (table, token) in tokens {
+        let (kind, id) = token.split_once(':').expect("matched above");
+        if id.is_empty() || id.contains(':') {
+            continue; // not an answer token, just text
+        }
+        let is_form_table = placed
+            .get(&table)
+            .and_then(|(_, _, _, s)| s.as_object())
+            .is_some_and(|s| s.contains_key("formTarget"));
+        match placed.get(id) {
+            Some((k, _, _, s)) if k == kind && s.get("hidden") == Some(&Value::Bool(true)) => {}
+            _ if !is_form_table => {}
+            _ => r.add(
+                Severity::Warning,
+                "roles",
+                format!("answers table {table} refers to {token}, which is not a hidden {kind}"),
+            ),
+        }
+    }
+
+    // 9. Search index: a cache; being empty is normal (DunneNote rebuilds it on open).
     r.checks_run.push("search_index");
     let indexed: i64 = conn.query_row("SELECT count(*) FROM search_index", [], |row| row.get(0))?;
     if indexed == 0 && !canvases.is_empty() {

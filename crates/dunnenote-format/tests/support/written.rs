@@ -9,7 +9,10 @@
 use std::path::{Path, PathBuf};
 
 use dunnenote_format::ingest::TypeHint;
-use dunnenote_format::{payload, At, Frame, Notebook, Result, Settings, Stroke, StrokePoint};
+use dunnenote_format::settings_keys::{FormField, LabelDisplay, Placement};
+use dunnenote_format::{
+    payload, At, Frame, Notebook, Result, Settings, Stroke, StrokePoint, Submission,
+};
 use serde_json::{json, Value};
 
 /// A 16x16 PNG with four opaque quadrants (the same image DunneNote's golden notebooks use).
@@ -295,6 +298,85 @@ pub fn tables(root: &Path) -> Result<()> {
     })
 }
 
+/// Forms: a new form with text, sketch and picture fields, two submissions (the second adding a
+/// column to a table with rows), a hidden field, and captions in two placements.
+pub fn forms(root: &Path) -> Result<()> {
+    let mut nb = Notebook::create(root, Some("Written Forms"))?;
+    let nb_id = nb.notebook_node()?.id;
+    let (page, text) = nb.write(|w| {
+        let section = w.add_section(&nb_id, "Intake", At::End)?;
+        let (page, _) = w.add_form(&section, "Visit log", At::End)?;
+        let text: String = w.transaction().query_row(
+            "SELECT id FROM canvas_instances WHERE page_id = ?1 AND kind = 'rich_text'",
+            [&page],
+            |r| r.get(0),
+        )?;
+        Ok((page, text))
+    })?;
+    let (sig, photo) = nb.write(|w| {
+        let mut visitor = FormField::new("Visitor");
+        visitor.required = true;
+        visitor.label_display = Some(LabelDisplay::Above);
+        w.set_form_field(&text, Some(&visitor))?;
+        w.set_rich_text(&text, &payload::rich_text_from_plain("Ada Lovelace"))?;
+        let sig = w.add_sketch(
+            &page,
+            Frame::new(560, 40, 320, 120),
+            &[stroke(
+                "sig",
+                &[(0.1, 0.6, 0.4), (0.5, 0.3, 0.8), (0.9, 0.6, 0.5)],
+                "#111111",
+                2.0,
+            )],
+            &Settings::new(),
+        )?;
+        let mut signature = FormField::new("Signature");
+        signature.label = Some("Sign here".into());
+        w.set_form_field(&sig, Some(&signature))?;
+        let hidden = w.add_rich_text(
+            &page,
+            Frame::new(560, 200, 200, 40),
+            Some(&payload::rich_text_from_plain("not asked")),
+            &settings(json!({"hidden": true})),
+        )?;
+        w.set_form_field(&hidden, Some(&FormField::new("Hidden")))?;
+        w.merge_page_settings(
+            &page,
+            &settings(json!({"formTabOrder": [sig, text], "formLabelDisplay": "below"})),
+        )?;
+        w.submit_form(
+            &page,
+            &Submission {
+                submitted: Some("2026-01-05T09:30:00+00:00".into()),
+                ..Submission::default()
+            },
+        )?;
+        let photo = w.add_picture(&page, (560, 300), Some((160, 160)), PNG, &Settings::new())?;
+        w.set_form_field(&photo, Some(&FormField::new("Photo")))?;
+        Ok((sig, photo))
+    })?;
+    nb.write(|w| {
+        w.set_rich_text(&text, &payload::rich_text_from_markdown("**Grace** Hopper"))?;
+        w.set_sketch(&sig, &[])?;
+        w.submit_form(
+            &page,
+            &Submission {
+                submitted: Some("2026-01-06T17:05:09-05:00".into()),
+                confirm_new_columns: true,
+                ..Submission::default()
+            },
+        )?;
+        w.add_caption(
+            &photo,
+            Some(&payload::rich_text_from_plain("Visitor photo")),
+            Placement::Bottom,
+        )?;
+        let loose = w.add_picture(&page, (760, 300), Some((200, 120)), PNG, &Settings::new())?;
+        w.add_caption(&loose, None, Placement::CornerBottomRight)?;
+        Ok(())
+    })
+}
+
 pub const TABLE_CSV: &str = "Task;Owner;Hours;Done;Due;Blank\n\
     Survey;Ada;3;TRUE;2026-01-05;\n\
     Report;;5.5;false;2026-01-06T09:30;\n\
@@ -332,6 +414,7 @@ pub fn build_all(out: &Path) -> Result<Vec<(&'static str, PathBuf)>> {
         ("written-minimal", minimal as fn(&Path) -> Result<()>),
         ("written-every-kind", every_kind),
         ("written-tables", tables),
+        ("written-forms", forms),
     ] {
         let root = out.join(format!("{name}.dunnenote"));
         build(&root)?;

@@ -310,6 +310,24 @@ pub fn rfc3339(secs: i64) -> String {
     )
 }
 
+/// RFC 3339 with a numeric offset (`YYYY-MM-DDTHH:MM:SS+HH:MM`) for Unix seconds, shown in the
+/// zone `offset_minutes` east of UTC — the form of a form submission's `Submitted` time.
+pub fn rfc3339_offset(secs: i64, offset_minutes: i32) -> String {
+    let local = secs + i64::from(offset_minutes) * 60;
+    let s = local.rem_euclid(86_400);
+    let sign = if offset_minutes >= 0 { '+' } else { '-' };
+    let off = offset_minutes.unsigned_abs();
+    format!(
+        "{}T{:02}:{:02}:{:02}{sign}{:02}:{:02}",
+        utc_date(local),
+        s / 3600,
+        (s % 3600) / 60,
+        s % 60,
+        off / 60,
+        off % 60
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -384,6 +402,26 @@ mod tests {
             {"type":"paragraph","content":[{"type":"text","marks":[{"type":"underline"},{"type":"text_color","attrs":{"color":"red"}}],"text":"u"}]}
         ]});
         assert_eq!(markdown(&doc), "kept\n\n<u>u</u>");
+    }
+
+    #[test]
+    fn offset_times() {
+        assert_eq!(
+            rfc3339_offset(1_767_605_400, 0),
+            "2026-01-05T09:30:00+00:00"
+        );
+        assert_eq!(
+            rfc3339_offset(1_767_605_400, 60),
+            "2026-01-05T10:30:00+01:00"
+        );
+        assert_eq!(
+            rfc3339_offset(1_767_605_400, -330),
+            "2026-01-05T04:00:00-05:30"
+        );
+        assert_eq!(
+            rfc3339_offset(1_767_571_200, -60),
+            "2026-01-04T23:00:00-01:00"
+        );
     }
 
     #[test]

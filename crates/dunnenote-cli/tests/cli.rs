@@ -225,3 +225,95 @@ fn tables_from_the_command_line() {
         serde_json::json!({"c0": "Rope", "c3": 10, "c1": "blue"})
     );
 }
+
+#[test]
+fn forms_and_captions_from_the_command_line() {
+    let dir = TempDir::new().unwrap();
+    let nb_path = dir.path().join("Survey.dunnenote");
+    let nb = nb_path.to_str().unwrap();
+    let strokes = dir.path().join("sig.json");
+    std::fs::write(
+        &strokes,
+        r##"[{"id":"s","points":[{"x":0.1,"y":0.5,"p":0.5},{"x":0.9,"y":0.5,"p":0.5}],"color":"#111111","width":2,"tool":"pen"}]"##,
+    )
+    .unwrap();
+    let image = dir.path().join("photo.png");
+    std::fs::write(&image, PNG).unwrap();
+    id(&["new", nb], None);
+
+    let page = id(&["form", nb, "new", "root", "--name=Visit log"], None);
+    let read = Notebook::open(&nb_path).unwrap();
+    let text = read.canvases(&page).unwrap()[0].id.clone();
+    drop(read);
+    let sig = id(&["add-canvas", nb, &page, "sketch"], None);
+    for args in [
+        vec!["form", nb, "field", &text, "--name=Visitor", "--required"],
+        vec![
+            "form",
+            nb,
+            "field",
+            &sig,
+            "--name=Signature",
+            "--label=Sign here",
+        ],
+    ] {
+        let out = dnfmt(&args, None);
+        assert!(
+            out.status.success(),
+            "{args:?}: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+    }
+    let row = id(
+        &[
+            "form",
+            nb,
+            "submit",
+            &page,
+            "visitor=Ada Lovelace",
+            &format!("Signature=@{}", strokes.display()),
+            "--utc-offset=60",
+        ],
+        None,
+    );
+    // Required and blank: refused, nothing appended.
+    let refused = dnfmt(&["form", nb, "submit", &page, "Visitor= "], None);
+    assert_eq!(refused.status.code(), Some(1));
+    assert!(String::from_utf8_lossy(&refused.stderr).contains("required"));
+
+    let pic = id(
+        &["add-canvas", nb, &page, "picture", image.to_str().unwrap()],
+        None,
+    );
+    let cap = id(&["caption", nb, &pic, "Figure 1", "--placement=top"], None);
+
+    let verify = dnfmt(&["verify", nb, "--full", "--strict"], None);
+    assert!(
+        verify.status.success(),
+        "{}",
+        String::from_utf8_lossy(&verify.stdout)
+    );
+    let read = Notebook::open(&nb_path).unwrap();
+    let table = read
+        .canvases(&page)
+        .unwrap()
+        .into_iter()
+        .find(|c| c.kind == CanvasKind::Spreadsheet)
+        .unwrap();
+    let data = read.dataset(&table.id).unwrap().unwrap();
+    assert_eq!(data.rows.len(), 1);
+    assert_eq!(data.rows[0].id, row);
+    let names: Vec<&str> = data.columns.iter().map(|c| c.name.as_str()).collect();
+    assert_eq!(names, ["Visitor", "Signature", "Submitted"]);
+    assert_eq!(data.rows[0].cells["c0"], "Ada Lovelace");
+    assert!(data.rows[0].cells["c1"]
+        .as_str()
+        .unwrap()
+        .starts_with("sketch:"));
+    assert!(data.rows[0].cells["c2"]
+        .as_str()
+        .unwrap()
+        .ends_with("+01:00"));
+    let c = read.canvas(&cap).unwrap();
+    assert_eq!(c.settings["caption"]["placement"], "top");
+}

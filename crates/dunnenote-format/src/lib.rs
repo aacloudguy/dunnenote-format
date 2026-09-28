@@ -32,8 +32,8 @@
 //! ```
 //!
 //! **Status:** pre-release. Reading, exporting (JSON, Markdown, CSV) and writing pages, sections,
-//! rich text, sketches, pictures, canvas groups and tables are available; forms, calendars, tags,
-//! archiving and templates land in a later release.
+//! rich text, sketches, pictures, canvas groups, tables, forms and captions are available;
+//! calendars, tags, archiving and templates land in a later release.
 
 pub mod error;
 pub mod export;
@@ -58,4 +58,4 @@ pub use model::*;
 pub use notebook::Notebook;
 pub use schema::{create_schema, FORMAT_VERSION, SCHEMA_SQL, SCHEMA_VERSION};
 pub use verify::{verify, Finding, Report, Severity, VerifyLevel};
-pub use write::{At, Frame, Writer, TABLE_SIZE};
+pub use write::{At, Frame, Submission, Submitted, Writer, TABLE_SIZE};

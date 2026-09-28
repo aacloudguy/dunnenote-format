@@ -40,7 +40,9 @@ use crate::position;
 use crate::schema::{create_schema, FORMAT_VERSION, SCHEMA_VERSION};
 use crate::settings_keys;
 
+mod forms;
 mod tables;
+pub use forms::{Submission, Submitted};
 pub use tables::{DATASET_SCHEMA_VERSION, TABLE_SIZE};
 
 /// The folder extension every notebook has.
@@ -760,16 +762,38 @@ impl Writer<'_> {
         frame: Frame,
         settings: &Settings,
     ) -> Result<String> {
+        self.insert_canvas_in_layer(page, kind, source_hash, frame, settings, None)
+    }
+
+    /// The page's top layer: its highest `z_index`, or 0 on an empty page.
+    fn top_layer(&self, page: &str) -> Result<i64> {
+        Ok(self.tx.query_row(
+            "SELECT coalesce(max(z_index), 0) FROM canvas_instances WHERE page_id = ?1",
+            [page],
+            |r| r.get(0),
+        )?)
+    }
+
+    /// Insert a canvas in layer `z_index` (the top layer when `None`), taking the next free
+    /// `z_minor` in it.
+    fn insert_canvas_in_layer(
+        &mut self,
+        page: &str,
+        kind: CanvasKind,
+        source_hash: &str,
+        frame: Frame,
+        settings: &Settings,
+        z_index: Option<i64>,
+    ) -> Result<String> {
         Self::check_frame(frame)?;
         let settings = Self::settings_json(settings)?;
         if self.node_kind(page)? != "page" {
             return Err(Error::Invalid(format!("{page} is not a page")));
         }
-        let z_index: i64 = self.tx.query_row(
-            "SELECT coalesce(max(z_index), 0) FROM canvas_instances WHERE page_id = ?1",
-            [page],
-            |r| r.get(0),
-        )?;
+        let z_index = match z_index {
+            Some(z) => z,
+            None => self.top_layer(page)?,
+        };
         let id = new_id();
         self.tx.execute(
             "INSERT INTO canvas_instances(id, page_id, kind, source_hash, x, y, width, height, \

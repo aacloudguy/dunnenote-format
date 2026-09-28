@@ -13,7 +13,7 @@ use dunnenote_format::{
 use serde_json::json;
 
 mod edit;
-use edit::{add_canvas, add_node, new_cmd, table_cmd};
+use edit::{add_canvas, add_node, caption_cmd, form_cmd, new_cmd, table_cmd};
 
 const USAGE: &str = "\
 dnfmt — read, check and edit DunneNote notebooks (.dunnenote)
@@ -52,6 +52,16 @@ USAGE:
     dnfmt table <notebook> <table-id> add-column <name>
                                            Change an Editable table; a column is
                                            named or given by key (c0, c1, …)
+    dnfmt form <notebook> new <parent-id|root> [--name=<name>]
+                                           A form page with its answers table
+    dnfmt form <notebook> field <canvas-id> --name=<name> [--label=<text>]
+                                           [--required] [--label-display=…] [--remove]
+    dnfmt form <notebook> submit <page-id> [<field>=<value>|<field>=@<file>…]
+                                           [--submitted=<time>] [--utc-offset=<minutes>]
+                                           [--confirm]
+                                           Fill the named fields, then submit, as the
+                                           Submit button does
+    dnfmt caption <notebook> <picture-id> [<text>|@<file>] [--placement=<where>]
     dnfmt --version
 
 Reading commands open notebooks read-only and never change them. Editing
@@ -80,7 +90,7 @@ impl Args {
     }
 }
 
-const BOOL_FLAGS: [&str; 10] = [
+const BOOL_FLAGS: &[&str] = &[
     "--json",
     "--full",
     "--strict",
@@ -91,8 +101,21 @@ const BOOL_FLAGS: [&str; 10] = [
     "--first",
     "--no-text",
     "--version",
+    "--required",
+    "--remove",
+    "--confirm",
 ];
-const VALUE_FLAGS: [&str; 4] = ["--name", "--at", "--size", "--alt"];
+const VALUE_FLAGS: &[&str] = &[
+    "--name",
+    "--at",
+    "--size",
+    "--alt",
+    "--label",
+    "--label-display",
+    "--submitted",
+    "--utc-offset",
+    "--placement",
+];
 
 fn main() -> ExitCode {
     let args = Args::parse();
@@ -125,6 +148,10 @@ fn main() -> ExitCode {
             add_canvas(path, page, kind, rest.first().copied(), &args)
         }
         ["table", path, table, op, rest @ ..] => table_cmd(path, table, op, rest),
+        ["form", path, op, rest @ ..] => form_cmd(path, op, rest, &args),
+        ["caption", path, picture, rest @ ..] if rest.len() <= 1 => {
+            caption_cmd(path, picture, rest.first().copied(), &args)
+        }
         ["verify", path] => {
             return verify_cmd(
                 path,

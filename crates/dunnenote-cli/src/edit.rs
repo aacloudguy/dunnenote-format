@@ -1,8 +1,10 @@
 //! Editing commands: each opens the notebook for writing, makes one change in one transaction and
 //! prints the new item's id.
 
+use dunnenote_format::settings_keys::{FormField, LabelDisplay, Placement};
 use dunnenote_format::{
-    ingest, payload, At, Error, Frame, NodeKind, Notebook, Settings, Stroke, TABLE_SIZE,
+    ingest, payload, At, CanvasKind, Error, Frame, NodeKind, Notebook, Settings, Stroke,
+    Submission, TABLE_SIZE,
 };
 use serde_json::{Map, Value};
 
@@ -226,5 +228,151 @@ pub fn table_cmd(path: &str, table: &str, op: &str, rest: &[&str]) -> Result<(),
         }
     };
     println!("{out}");
+    Ok(())
+}
+
+fn root_or(nb: &Notebook, id: &str) -> Result<String, Error> {
+    Ok(if id == "root" {
+        nb.notebook_node()?.id
+    } else {
+        id.to_string()
+    })
+}
+
+/// `dnfmt form <notebook> new|field|submit …`
+pub fn form_cmd(path: &str, op: &str, rest: &[&str], args: &Args) -> Result<(), Error> {
+    let mut nb = Notebook::open_writable(path)?;
+    match (op, rest) {
+        ("new", [parent]) => {
+            let parent = root_or(&nb, parent)?;
+            let name = args.value("--name").unwrap_or("Untitled form");
+            let (page, table) = nb.write(|w| w.add_form(&parent, name, At::End))?;
+            println!("{page}");
+            eprintln!("answers table {table}");
+            Ok(())
+        }
+        ("field", [canvas]) => {
+            if args.flag("--remove") {
+                nb.write(|w| w.set_form_field(canvas, None))?;
+                return Ok(());
+            }
+            let name = args
+                .value("--name")
+                .ok_or_else(|| bad_input("form field needs --name=<name> (or --remove)"))?;
+            let mut field = FormField::new(name);
+            field.label = args.value("--label").map(str::to_string);
+            field.required = args.flag("--required");
+            field.label_display =
+                match args.value("--label-display") {
+                    None => None,
+                    Some(v) => Some(LabelDisplay::parse(v).ok_or_else(|| {
+                        bad_input("--label-display is off, hover, above or below")
+                    })?),
+                };
+            nb.write(|w| w.set_form_field(canvas, Some(&field)))?;
+            Ok(())
+        }
+        ("submit", [page, answers @ ..]) => {
+            // Each answer fills the field of that name (ignoring case) before submitting, as a
+            // person would: text for a Rich Text field, @file for a Markdown/text file or, for a
+            // Sketch field, a strokes JSON file.
+            let mut fields: Vec<(String, String, CanvasKind)> = Vec::new();
+            for c in nb.canvases(page)? {
+                if let Some(role) = FormField::read(&c.settings) {
+                    fields.push((role.name.to_lowercase(), c.id.clone(), c.kind));
+                }
+            }
+            enum Fill {
+                Text(String, serde_json::Value),
+                Strokes(String, Vec<Stroke>),
+            }
+            let mut fills = Vec::new();
+            for answer in answers {
+                let (name, value) = answer.split_once('=').ok_or_else(|| {
+                    bad_input(format!("{answer:?}: give answers as <field>=<value>"))
+                })?;
+                let (_, id, kind) = fields
+                    .iter()
+                    .find(|(n, _, _)| *n == name.to_lowercase())
+                    .ok_or_else(|| bad_input(format!("this form has no field named {name:?}")))?;
+                let file = value.strip_prefix('@');
+                fills.push(match kind {
+                    CanvasKind::RichText => {
+                        let doc = match file {
+                            Some(f) => rich_text_from_file(Some(f))?.expect("a file was given"),
+                            None => payload::rich_text_from_plain(value),
+                        };
+                        Fill::Text(id.clone(), doc)
+                    }
+                    CanvasKind::Sketch => {
+                        let f = file.ok_or_else(|| {
+                            bad_input(format!("{name} is a sketch: answer it with @strokes.json"))
+                        })?;
+                        Fill::Strokes(id.clone(), strokes_from_file(Some(f))?)
+                    }
+                    other => {
+                        return Err(bad_input(format!(
+                            "{name} is a {} field; it is submitted as it is on the page",
+                            other.display_name()
+                        )))
+                    }
+                });
+            }
+            let how = Submission {
+                submitted: args.value("--submitted").map(str::to_string),
+                utc_offset_minutes: match args.value("--utc-offset") {
+                    None => 0,
+                    Some(v) => v.parse().map_err(|_| {
+                        bad_input("--utc-offset is minutes east of UTC, like --utc-offset=-300")
+                    })?,
+                },
+                confirm_new_columns: args.flag("--confirm"),
+            };
+            let done = nb.write(|w| {
+                for fill in &fills {
+                    match fill {
+                        Fill::Text(id, doc) => w.set_rich_text(id, doc)?,
+                        Fill::Strokes(id, strokes) => w.set_sketch(id, strokes)?,
+                    }
+                }
+                w.submit_form(page, &how)
+            })?;
+            println!("{}", done.row);
+            if !done.new_columns.is_empty() {
+                eprintln!("added columns {}", done.new_columns.join(", "));
+            }
+            Ok(())
+        }
+        _ => Err(bad_input(
+            "use: form <notebook> new <parent-id|root> [--name=<name>] | \
+             field <canvas-id> --name=<name> [--label=…] [--required] | \
+             submit <page-id> [<field>=<value>|<field>=@<file>…]",
+        )),
+    }
+}
+
+/// `dnfmt caption <notebook> <picture-id> [<text>|@<file>] [--placement=…]`
+pub fn caption_cmd(
+    path: &str,
+    picture: &str,
+    text: Option<&str>,
+    args: &Args,
+) -> Result<(), Error> {
+    let mut nb = Notebook::open_writable(path)?;
+    let placement = match args.value("--placement") {
+        None => Placement::Bottom,
+        Some(p) => Placement::parse(p).ok_or_else(|| {
+            bad_input("--placement is bottom, top, corner-tl, corner-tr, corner-bl, corner-br, movie or user")
+        })?,
+    };
+    let doc = match text {
+        None => None,
+        Some(t) => match t.strip_prefix('@') {
+            Some(file) => rich_text_from_file(Some(file))?,
+            None => Some(payload::rich_text_from_plain(t)),
+        },
+    };
+    let id = nb.write(|w| w.add_caption(picture, doc.as_ref(), placement))?;
+    println!("{id}");
     Ok(())
 }
