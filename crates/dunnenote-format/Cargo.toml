@@ -21,6 +21,8 @@ imagesize = { workspace = true }
 tempfile = { workspace = true }
 unicode-normalization = { workspace = true }
 csv = { workspace = true }
+tar = { workspace = true }
+flate2 = { workspace = true }
 
 [dev-dependencies]
 

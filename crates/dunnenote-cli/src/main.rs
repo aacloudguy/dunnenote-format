@@ -13,7 +13,10 @@ use dunnenote_format::{
 use serde_json::json;
 
 mod edit;
-use edit::{add_canvas, add_node, caption_cmd, form_cmd, new_cmd, table_cmd};
+use edit::{
+    add_canvas, add_node, archive_cmd, caption_cmd, form_cmd, meta_cmd, new_cmd, table_cmd,
+    tag_cmd, template_cmd,
+};
 
 const USAGE: &str = "\
 dnfmt — read, check and edit DunneNote notebooks (.dunnenote)
@@ -62,6 +65,14 @@ USAGE:
                                            Fill the named fields, then submit, as the
                                            Submit button does
     dnfmt caption <notebook> <picture-id> [<text>|@<file>] [--placement=<where>]
+    dnfmt template <notebook> make <page-id>
+    dnfmt template <notebook> new <template-id> <parent-id|root>
+    dnfmt archive <notebook> <id> --reason=superseded|wrong|irrelevant|other [--note=<text>]
+    dnfmt retrieve <notebook> <id>          A page, section, notebook or canvas
+    dnfmt tag <notebook> add|rm <id> <name>
+    dnfmt tag <notebook> alias <name> <alias> | rename <name> <new> | merge <from> <into>
+                                           | delete <name>
+    dnfmt meta <notebook> set <id> <key>=<value> | rm <id> <key>
     dnfmt --version
 
 Reading commands open notebooks read-only and never change them. Editing
@@ -115,6 +126,8 @@ const VALUE_FLAGS: &[&str] = &[
     "--submitted",
     "--utc-offset",
     "--placement",
+    "--reason",
+    "--note",
 ];
 
 fn main() -> ExitCode {
@@ -149,6 +162,11 @@ fn main() -> ExitCode {
         }
         ["table", path, table, op, rest @ ..] => table_cmd(path, table, op, rest),
         ["form", path, op, rest @ ..] => form_cmd(path, op, rest, &args),
+        ["template", path, op, rest @ ..] => template_cmd(path, op, rest),
+        ["archive", path, id] => archive_cmd(path, id, false, &args),
+        ["retrieve", path, id] => archive_cmd(path, id, true, &args),
+        ["tag", path, op, rest @ ..] => tag_cmd(path, op, rest),
+        ["meta", path, op, rest @ ..] => meta_cmd(path, op, rest),
         ["caption", path, picture, rest @ ..] if rest.len() <= 1 => {
             caption_cmd(path, picture, rest.first().copied(), &args)
         }

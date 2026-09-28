@@ -15,9 +15,9 @@ The key words MUST, MUST NOT, SHOULD and MAY are to be interpreted as described 
 7. Canvases: settings merge rule and reserved settings keys — [below](#7-canvas-and-page-settings)
 8. Payloads: rich text and sketch [below](#8-payloads-rich-text-and-sketch); tables
    [below](#tables); calendar, per-kind settings *(to be written)*
-9. Roles: captions and forms [below](#9-roles-captions-and-forms); templates *(to be written)*
-10. Groups, layering, archive *(to be written)*
-11. Tags and metadata, fold v1 *(to be written)*
+9. Roles: captions, forms and templates — [below](#9-roles-captions-forms-and-templates)
+10. Groups, layering, archive — [below](#10-groups-layering-archive)
+11. Tags and metadata, fold v1 — [below](#11-tags-and-metadata-fold-v1)
 12. The search index as a derived cache *(to be written)*
 13. Writer checklist — [below](#13-writer-checklist)
 14. Versioning policy and changelog *(to be written)*
@@ -164,7 +164,7 @@ A table canvas is either a **Data Table** (`kind = 'database'`) or an **Editable
   matches `-?[0-9]+(\.[0-9]+)?` (written as JavaScript writes numbers: `7`, not `7.0`), as `""`
   when blank, and otherwise as the text exactly as typed.
 
-## 9. Roles: captions and forms
+## 9. Roles: captions, forms and templates
 
 ### Captions
 
@@ -213,6 +213,89 @@ A picture may have several captions.
      submission time as RFC 3339 with the submitter's UTC offset, e.g.
      `2026-01-05T09:30:00+01:00`), then the carrier tokens.
 
+### Templates
+
+- A template is a page with `is_template = 1`, named `<name> (template)`.
+- **Making a template** of a page (one transaction): a new page after the source page's last
+  sibling, then a copy of the source's canvas groups (new ids, same settings, parents remapped),
+  then of each canvas in layer order (`z_index`, `z_minor`, `created_at`, `id`), each keeping its
+  frame and `z_index` and taking the next `z_minor` there, then of the page settings. A canvas
+  whose settings have `templateKeepContent: true` is copied as it is. Every other canvas is
+  **cleared**:
+  - a picture or calendar points at the placeholder sentinel blob (§6) and its settings become
+    `{"placeholder": true}` followed by only these of its keys, in this order:
+    `frameOutlineHidden`, `frameAppearance`, `backgroundTransparent`, `hidden`, `formField`,
+    `templateKeepContent`, then for a picture `renderMode`, `reflow`, `sizingMode`, `rotation`,
+    `rotationSnapDeg`, `rotationStepDecimals`, or for a calendar `scale`, `layoutMode`. A cleared
+    picture has no markup and a cleared calendar no events;
+  - rich text becomes the empty document; a sketch has no strokes;
+  - a table keeps its columns, shape, `source_kind` and number of rows, with every row `{}`;
+  - any other settings stay as they were, less `scrollTopPx` and `scrollLeftPx`.
+- **A new page from a template** is added at the end of the chosen parent, named as the
+  template without ` (template)`, and copies every group and canvas as it is — rich text,
+  sketches and markup verbatim, tables with all their rows (renumbered from 0) — with
+  `is_template = 0`. Calendar events are not copied in either direction.
+- **References follow the copies:** a copied caption's `anchor` points at the copied picture; in
+  the copied page settings, `formTabOrder` keeps only ids that were copied (mapped to the
+  copies), and a canvas `formDestination` (or the legacy `formTargetId`) points at the copy.
+  Tags and metadata are not copied.
+
+## 10. Groups, layering, archive
+
+- **Groups** (`groups`): a group belongs to one page and may sit inside another group on the
+  same page (`parent_group_id`), at most 64 deep and never in a cycle. A canvas is in at most one
+  group (`canvas_instances.group_id`). New groups have settings `{}`.
+- **Layering.** Canvases draw in order of `z_index`, then `z_minor`. A new canvas goes into the
+  page's top `z_index` (0 on an empty page) and takes the next `z_minor` in it, so a page's
+  canvases usually share one layer. `(page_id, z_index, z_minor)` is unique.
+- **Archiving a page, section or notebook** (`nodes.is_archived`, `archive_reason`,
+  `archive_note`, `archived_at`) marks that one row; nothing under it, none of its canvases and
+  no search row changes. A reader hiding archived content checks each node's ancestors too.
+  - It is refused when the node or an ancestor is already archived, or — except for the
+    notebook itself — when anything under it is.
+  - `archive_reason` is `superseded`, `wrong`, `irrelevant` or `other`. `other` requires a note;
+    the others have none. A note is trimmed, 1–1024 bytes, without NUL, CR or LF.
+  - Before marking the row, the writer stores a snapshot of the subtree at
+    `.archive/<node id>.tar.gz` (folder mode 0700; written to a temporary file, synced, then
+    renamed into place). It is a gzip (mtime 0, OS byte 255) tar of two regular members with
+    zeroed owners, mode 0644 and mtime 0: `manifest.json`
+    `{"format_version":1,"app":"dunnenote","checksum_algorithm":"sha256","root_node_id",
+    "entries":[{"path":"nodes.jsonl","size","sha256"}]}` and `nodes.jsonl`, one
+    `{"id","kind","parent_id","name","position","is_archived","is_template","created_at",
+    "updated_at"}` object per node of the subtree (as it was before archiving), sorted by id.
+  - **Retrieving** clears the four columns and then deletes the snapshot if it reads back
+    correctly; a damaged snapshot is left in place. Writers MUST NOT otherwise delete snapshots.
+- **Archiving a canvas** sets `lifecycle = 'archived'` with `lifecycle_reason`,
+  `lifecycle_note` (same rules) and `lifecycle_at`; retrieving sets `lifecycle = 'active'` and
+  clears the other three. An archived canvas stays in place and searchable.
+
+## 11. Tags and metadata, fold v1
+
+- **Fold v1** is the comparison form of tag names, aliases, metadata keys and text values:
+  Unicode NFC, then full lowercase (not locale-aware), then NFD, then every combining mark
+  removed, then NFC. Nothing is trimmed. Examples: `Téxas` → `texas`, `Straße` → `straße`,
+  `İstanbul` → `istanbul`, `Ελλάδα` → `ελλαδα`, `東京タワー` unchanged, a string of only combining
+  marks → empty. Writers MUST produce the same folds as DunneNote, whose Unicode tables are
+  those of Rust 1.95 and `unicode-normalization` 0.1.24.
+- **Tags** (`tags`): `name` is trimmed, 1–255 characters, without NUL, CR or LF; its fold MUST
+  be non-empty and have no blank `/`-separated segment (a `/` expresses hierarchy). `name_folded`
+  is unique, and a name also MUST NOT fold to any alias. Creating a tag whose name folds to an
+  existing tag or alias returns that tag. `color` and `description` are not written.
+- **Aliases** (`tag_aliases`) follow the same name rules and MUST NOT fold to any tag name or
+  other alias. Renaming a tag to one of its own aliases removes that alias. **Merging** a tag into
+  another moves its applications (dropping duplicates) and aliases (dropping one equal to the
+  winner's name), deletes it, and adds its old name as an alias of the winner.
+- **Applications** (`item_tags`): unique per `(tag_id, source_kind, source_id)`. `source_kind`
+  is `node` (pages, sections, the notebook), `instance` (a canvas), `dataset` (a table's data) or
+  `dataset_row`; the item MUST exist. `canvas` is legacy and MUST NOT be written.
+- **Metadata** (`item_meta`): one value per `(source_kind, source_id, key)` — setting replaces.
+  `key` is stored folded (1–255 characters, no whitespace or control characters). Reserved keys
+  are typed: `capture_time` (`value_num` = Unix seconds > 0, `value_text` = ISO 8601), `geo`
+  (`value_num` = latitude in [-90, 90], `value_num2` = longitude in [-180, 180]), `place` and
+  `camera` (text). Every other key is text: `value_text` trimmed, 1–1000 characters, no NUL,
+  with `value_folded` its fold. `source` is the provenance (`user`, `exif`, `enrich:<name>`; no
+  whitespace, at most 64 characters).
+
 ## 13. Writer checklist
 
 A conforming **Writer**:
@@ -246,30 +329,9 @@ A conforming **Writer**:
     ([Tables](#tables)).
 14. Writes page settings as §7 describes, and gives every form submission its own carrier canvases
     and one appended row (§9).
+15. Folds with fold v1 exactly (§11), and writes the `.archive/` snapshot before marking a node
+    archived (§10).
 
 `dunnenote-format` implements this checklist; its conformance suite includes notebooks it writes
 being opened by DunneNote's own code, health-checked with no findings, and read back field for
 field.
-
-## Notes gathered so far (not yet normative)
-
-Observed in notebooks written by DunneNote itself (see `fixtures/`), to be folded into the
-sections above:
-
-- **`.archive/`** holds one compressed snapshot per archived page or section
-  (`<node id>.tar.gz`, holding `manifest.json` with SHA-256 checksums and `nodes.jsonl`). The
-  live rows stay the source of truth (`nodes.is_archived` and its
-  reason columns); retrieving deletes the snapshot. Readers MAY ignore the folder; writers MUST
-  NOT delete it.
-- **Archiving a page does not change its canvases.** Their `lifecycle` stays `active`; a reader
-  that hides archived content checks the page (and its ancestors) as well as each canvas.
-- **Tag `source_kind`.** Every canvas, rich text included, is tagged as `instance`
-  (`canvas_instances.id`). The value `canvas` is accepted by the schema but refers to a table
-  that no longer exists; writers SHOULD NOT use it.
-- **Layering.** New canvases go into the top `z_index` (0 on a fresh page) and take the next
-  `z_minor`, so a page's canvases share one major layer until the user moves one.
-- **Templates.** A template page has `is_template = 1` and its name ends in ` (template)`.
-  Pictures in it point at the placeholder sentinel blob with settings `{"placeholder": true}`;
-  text canvases keep their content only when their settings carry `templateKeepContent: true`.
-- **Cleared text** in a template (and in pages made from it) is the empty document
-  `{"type":"doc","content":[{"type":"paragraph"}]}`.

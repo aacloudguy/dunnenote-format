@@ -20,10 +20,11 @@ editable.
 | Library: create notebooks; write sections, pages, rich text, sketches, pictures, picture markup, canvas groups | available (pre-release) |
 | Library: write tables (import CSV/JSON, blank Editable tables, edit rows and columns) | available (pre-release) |
 | Library: forms (fields, new form, submit to an answers table with carriers), captions, page settings | available (pre-release) |
-| Library: write calendars, tags, archive, templates | planned |
+| Library: templates (make, new from), archive and retrieve (with `.archive/` snapshots), tags, aliases, metadata | available (pre-release) |
+| Library: write calendars | planned |
 | `dnfmt inspect`, `ls`, `cat`, `verify`, `export` | available (pre-release) |
-| `dnfmt new`, `add-section`, `add-page`, `add-canvas rich-text\|sketch\|picture\|table`, `table`, `form`, `caption` | available (pre-release) |
-| `dnfmt tag`, `archive`, `template`, `add-canvas` for calendars | planned |
+| `dnfmt new`, `add-section`, `add-page`, `add-canvas rich-text\|sketch\|picture\|table`, `table`, `form`, `caption`, `template`, `archive`, `retrieve`, `tag`, `meta` | available (pre-release) |
+| `dnfmt add-canvas` for calendars | planned |
 | `SPEC.md` — full specification with a writer checklist | in progress |
 | Golden test notebooks produced by DunneNote itself ([fixtures](fixtures/README.md)) | available |
 
@@ -70,6 +71,12 @@ dnfmt table ~/Notes/Trip.dunnenote "$T" add-row "Column 1=Tent" "Column 2=2"
 F=$(dnfmt form ~/Notes/Trip.dunnenote new "$S" --name="Check-in")   # a form and its answers table
 dnfmt form ~/Notes/Trip.dunnenote field <canvas-id> --name=Guest --required
 dnfmt form ~/Notes/Trip.dunnenote submit "$F" "Guest=Ada Lovelace"  # appends one answers row
+
+T=$(dnfmt template ~/Notes/Trip.dunnenote make "$P")                # "Day 1 (template)"
+dnfmt template ~/Notes/Trip.dunnenote new "$T" "$S"                 # a new "Day 1" from it
+dnfmt tag ~/Notes/Trip.dunnenote add "$P" "Travel/Italy"
+dnfmt meta ~/Notes/Trip.dunnenote set "$P" "place=Florence"
+dnfmt archive ~/Notes/Trip.dunnenote "$P" --reason=superseded      # retrieve undoes it
 ```
 
 A form submitted with `dnfmt` or the library goes to an answers table. Forms that send their

@@ -317,3 +317,65 @@ fn forms_and_captions_from_the_command_line() {
     let c = read.canvas(&cap).unwrap();
     assert_eq!(c.settings["caption"]["placement"], "top");
 }
+
+#[test]
+fn templates_archive_tags_and_metadata_from_the_command_line() {
+    let dir = TempDir::new().unwrap();
+    let nb_path = dir.path().join("Log.dunnenote");
+    let nb = nb_path.to_str().unwrap();
+    let ok = |args: &[&str]| {
+        let out = dnfmt(args, None);
+        assert!(
+            out.status.success(),
+            "{args:?}: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        String::from_utf8(out.stdout).unwrap().trim().to_string()
+    };
+    id(&["new", nb], None);
+    let section = id(&["add-section", nb, "root", "Meetings"], None);
+    let page = id(&["add-page", nb, &section, "Standup"], None);
+    let template = id(&["template", nb, "make", &page], None);
+    let made = id(&["template", nb, "new", &template, &section], None);
+
+    let tag = ok(&["tag", nb, "add", &page, "Weekly"]);
+    ok(&["tag", nb, "add", &made, "weekly"]);
+    ok(&["tag", nb, "alias", "WEEKLY", "Recurring"]);
+    ok(&["tag", nb, "rename", "recurring", "Every week"]);
+    ok(&["meta", nb, "set", &page, "Room=Blue room"]);
+    ok(&["meta", nb, "set", &page, "geo=51.5,-0.12"]);
+    ok(&["archive", nb, &made, "--reason=other", "--note=duplicate"]);
+    let refused = dnfmt(&["archive", nb, &made, "--reason=wrong"], None);
+    assert_eq!(refused.status.code(), Some(1));
+    let text = {
+        let read = Notebook::open(&nb_path).unwrap();
+        read.canvases(&page).unwrap()[0].id.clone()
+    };
+    ok(&["archive", nb, &text, "--reason=superseded"]);
+    ok(&["retrieve", nb, &text]);
+
+    let verify = dnfmt(&["verify", nb, "--full", "--strict"], None);
+    assert!(
+        verify.status.success(),
+        "{}",
+        String::from_utf8_lossy(&verify.stdout)
+    );
+    let read = Notebook::open(&nb_path).unwrap();
+    let t = read.node(&template).unwrap();
+    assert!(t.is_template && t.name == "Standup (template)");
+    let m = read.node(&made).unwrap();
+    assert!(m.is_archived && m.archive_note.as_deref() == Some("duplicate"));
+    assert!(nb_path
+        .join(".archive")
+        .join(format!("{made}.tar.gz"))
+        .is_file());
+    let tags = read.tags().unwrap();
+    assert_eq!(tags.len(), 1);
+    assert_eq!(tags[0].id, tag);
+    assert_eq!(tags[0].name, "Every week", "renamed through its alias");
+    assert_eq!(tags[0].aliases, ["Recurring"]);
+    assert_eq!(read.tags_of("node", &made).unwrap().len(), 1);
+    let meta = read.meta_of("node", &page).unwrap();
+    assert_eq!(meta.len(), 2);
+    assert_eq!(read.canvas(&text).unwrap().lifecycle, "active");
+}

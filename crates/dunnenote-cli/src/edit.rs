@@ -3,8 +3,8 @@
 
 use dunnenote_format::settings_keys::{FormField, LabelDisplay, Placement};
 use dunnenote_format::{
-    ingest, payload, At, CanvasKind, Error, Frame, NodeKind, Notebook, Settings, Stroke,
-    Submission, TABLE_SIZE,
+    ingest, payload, ArchiveReason, At, CanvasKind, Error, Frame, MetaValue, NodeKind, Notebook,
+    Settings, Stroke, Submission, TABLE_SIZE,
 };
 use serde_json::{Map, Value};
 
@@ -375,4 +375,190 @@ pub fn caption_cmd(
     let id = nb.write(|w| w.add_caption(picture, doc.as_ref(), placement))?;
     println!("{id}");
     Ok(())
+}
+
+/// `dnfmt template <notebook> make <page-id>` / `new <template-id> <parent-id|root>`
+pub fn template_cmd(path: &str, op: &str, rest: &[&str]) -> Result<(), Error> {
+    let mut nb = Notebook::open_writable(path)?;
+    let id = match (op, rest) {
+        ("make", [page]) => nb.write(|w| w.make_template(page))?,
+        ("new", [template, parent]) => {
+            let parent = root_or(&nb, parent)?;
+            nb.write(|w| w.new_from_template(template, &parent))?
+        }
+        _ => {
+            return Err(bad_input(
+                "use: template <notebook> make <page-id> | new <template-id> <parent-id|root>",
+            ))
+        }
+    };
+    println!("{id}");
+    Ok(())
+}
+
+/// Is `id` a page, section or notebook (true) or a canvas (false)?
+fn is_node(nb: &Notebook, id: &str) -> Result<bool, Error> {
+    match nb.node(id) {
+        Ok(_) => Ok(true),
+        Err(Error::NotFound { .. }) => {
+            nb.canvas(id)?;
+            Ok(false)
+        }
+        Err(e) => Err(e),
+    }
+}
+
+/// `dnfmt archive <notebook> <id> --reason=… [--note=…]` and `dnfmt retrieve <notebook> <id>`
+pub fn archive_cmd(path: &str, id: &str, retrieve: bool, args: &Args) -> Result<(), Error> {
+    let mut nb = Notebook::open_writable(path)?;
+    let node = is_node(&nb, id)?;
+    if retrieve {
+        return nb.write(|w| {
+            if node {
+                w.retrieve_node(id)
+            } else {
+                w.retrieve_canvas(id)
+            }
+        });
+    }
+    let reason = args
+        .value("--reason")
+        .and_then(ArchiveReason::parse)
+        .ok_or_else(|| bad_input("archive needs --reason=superseded|wrong|irrelevant|other"))?;
+    let note = args.value("--note");
+    nb.write(|w| {
+        if node {
+            w.archive_node(id, reason, note)
+        } else {
+            w.archive_canvas(id, reason, note)
+        }
+    })
+}
+
+/// The tag source kind for an id: a node, a canvas, a table's dataset or a table row.
+fn taggable(nb: &Notebook, id: &str) -> Result<&'static str, Error> {
+    if is_node(nb, id).unwrap_or(false) {
+        return Ok("node");
+    }
+    if nb.canvas(id).is_ok() {
+        return Ok("instance");
+    }
+    let conn = nb.connection();
+    let found = |sql: &str| -> bool { conn.query_row(sql, [id], |_| Ok(())).is_ok() };
+    if found("SELECT 1 FROM dataset_rows WHERE id = ?1") {
+        Ok("dataset_row")
+    } else if found("SELECT 1 FROM datasets WHERE id = ?1") {
+        Ok("dataset")
+    } else {
+        Err(bad_input(format!(
+            "{id} is not a page, section, canvas, table or row"
+        )))
+    }
+}
+
+fn tag_id(nb: &Notebook, name: &str) -> Result<String, Error> {
+    let folded = dunnenote_format::fold::fold(name.trim());
+    nb.tags()?
+        .into_iter()
+        .find(|t| {
+            t.name_folded == folded
+                || t.aliases
+                    .iter()
+                    .any(|a| dunnenote_format::fold::fold(a) == folded)
+        })
+        .map(|t| t.id)
+        .ok_or_else(|| bad_input(format!("there is no tag {name:?}")))
+}
+
+/// `dnfmt tag <notebook> add|rm <id> <name>` / `alias <name> <alias>` / `rename <name> <new>` /
+/// `merge <from> <into>` / `delete <name>`
+pub fn tag_cmd(path: &str, op: &str, rest: &[&str]) -> Result<(), Error> {
+    let mut nb = Notebook::open_writable(path)?;
+    match (op, rest) {
+        ("add", [id, name]) => {
+            let kind = taggable(&nb, id)?;
+            let tag = nb.write(|w| {
+                let tag = w.tag(name)?;
+                w.apply_tag(&tag, kind, id)?;
+                Ok(tag)
+            })?;
+            println!("{tag}");
+        }
+        ("rm", [id, name]) => {
+            let kind = taggable(&nb, id)?;
+            let tag = tag_id(&nb, name)?;
+            if !nb.write(|w| w.remove_tag(&tag, kind, id))? {
+                return Err(bad_input(format!("{id} is not tagged {name:?}")));
+            }
+        }
+        ("alias", [name, alias]) => {
+            let tag = tag_id(&nb, name)?;
+            nb.write(|w| w.add_tag_alias(&tag, alias))?;
+        }
+        ("rename", [name, new]) => {
+            let tag = tag_id(&nb, name)?;
+            nb.write(|w| w.rename_tag(&tag, new))?;
+        }
+        ("merge", [from, into]) => {
+            let (loser, winner) = (tag_id(&nb, from)?, tag_id(&nb, into)?);
+            nb.write(|w| w.merge_tags(&loser, &winner))?;
+        }
+        ("delete", [name]) => {
+            let tag = tag_id(&nb, name)?;
+            nb.write(|w| w.delete_tag(&tag))?;
+        }
+        _ => {
+            return Err(bad_input(
+                "use: tag <notebook> add|rm <id> <name> | alias <name> <alias> | \
+                 rename <name> <new-name> | merge <from> <into> | delete <name>",
+            ))
+        }
+    }
+    Ok(())
+}
+
+/// `dnfmt meta <notebook> set <id> <key>=<value>` (text; `geo=<lat>,<lon>`;
+/// `capture_time=<unix seconds>,<ISO 8601>`) / `rm <id> <key>`
+pub fn meta_cmd(path: &str, op: &str, rest: &[&str]) -> Result<(), Error> {
+    let mut nb = Notebook::open_writable(path)?;
+    match (op, rest) {
+        ("set", [id, pair]) => {
+            let kind = taggable(&nb, id)?;
+            let (key, raw) = pair
+                .split_once('=')
+                .ok_or_else(|| bad_input("give metadata as <key>=<value>"))?;
+            let folded = dunnenote_format::fold::fold(key.trim());
+            let value = match folded.as_str() {
+                "geo" => {
+                    let (lat, lon) = raw
+                        .split_once(',')
+                        .and_then(|(a, b)| Some((a.trim().parse().ok()?, b.trim().parse().ok()?)))
+                        .ok_or_else(|| bad_input("geo=<latitude>,<longitude>"))?;
+                    MetaValue::Geo { lat, lon }
+                }
+                "capture_time" => {
+                    let (secs, iso) = raw
+                        .split_once(',')
+                        .and_then(|(a, b)| Some((a.trim().parse().ok()?, b.trim().to_string())))
+                        .ok_or_else(|| bad_input("capture_time=<unix seconds>,<ISO 8601>"))?;
+                    MetaValue::Datetime {
+                        epoch_secs: secs,
+                        iso8601: iso,
+                    }
+                }
+                _ => MetaValue::Text(raw.to_string()),
+            };
+            nb.write(|w| w.set_meta(kind, id, key, &value, "user"))
+        }
+        ("rm", [id, key]) => {
+            let kind = taggable(&nb, id)?;
+            if !nb.write(|w| w.remove_meta(kind, id, key))? {
+                return Err(bad_input(format!("{id} has no {key:?}")));
+            }
+            Ok(())
+        }
+        _ => Err(bad_input(
+            "use: meta <notebook> set <id> <key>=<value> | rm <id> <key>",
+        )),
+    }
 }

@@ -40,10 +40,16 @@ use crate::position;
 use crate::schema::{create_schema, FORMAT_VERSION, SCHEMA_VERSION};
 use crate::settings_keys;
 
+mod archive;
 mod forms;
 mod tables;
+mod tags;
+mod templates;
+pub use archive::{read_snapshot, snapshot_bytes, ArchiveReason, ArchivedNode, ARCHIVE_DIR};
 pub use forms::{Submission, Submitted};
 pub use tables::{DATASET_SCHEMA_VERSION, TABLE_SIZE};
+pub use tags::{check_tag_name, MetaValue, TAGGABLE_KINDS};
+pub use templates::TEMPLATE_SUFFIX;
 
 /// The folder extension every notebook has.
 pub const NOTEBOOK_EXT: &str = ".dunnenote";

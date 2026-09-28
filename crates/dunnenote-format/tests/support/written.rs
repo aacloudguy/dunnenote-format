@@ -11,7 +11,8 @@ use std::path::{Path, PathBuf};
 use dunnenote_format::ingest::TypeHint;
 use dunnenote_format::settings_keys::{FormField, LabelDisplay, Placement};
 use dunnenote_format::{
-    payload, At, Frame, Notebook, Result, Settings, Stroke, StrokePoint, Submission,
+    payload, ArchiveReason, At, Frame, MetaValue, Notebook, Result, Settings, Stroke, StrokePoint,
+    Submission,
 };
 use serde_json::{json, Value};
 
@@ -377,6 +378,165 @@ pub fn forms(root: &Path) -> Result<()> {
     })
 }
 
+/// Templates: a page with every kind (text marked templateKeepContent, picture with a caption, a
+/// table, a form's answers table), made into a template, and a page made from it.
+pub fn templates(root: &Path) -> Result<()> {
+    let mut nb = Notebook::create(root, Some("Written Templates"))?;
+    let nb_id = nb.notebook_node()?.id;
+    nb.write(|w| {
+        let section = w.add_section(&nb_id, "Meetings", At::End)?;
+        let (page, _) = w.add_form(&section, "Meeting notes", At::End)?;
+        let heading = w.add_rich_text(
+            &page,
+            Frame::new(40, 380, 480, 60),
+            Some(&payload::rich_text_from_markdown("## Weekly meeting")),
+            &settings(json!({"templateKeepContent": true})),
+        )?;
+        let notes = w.add_rich_text(
+            &page,
+            Frame::new(40, 460, 480, 200),
+            Some(&payload::rich_text_from_plain("Discussed the budget.")),
+            &settings(json!({"scrollTopPx": 12})),
+        )?;
+        w.set_form_field(&notes, Some(&FormField::new("Notes")))?;
+        let photo = w.add_picture(
+            &page,
+            (560, 40),
+            Some((160, 160)),
+            PNG,
+            &settings(json!({"alt": "Room photo", "rotation": 90})),
+        )?;
+        w.add_caption(
+            &photo,
+            Some(&payload::rich_text_from_plain("The room")),
+            Placement::Bottom,
+        )?;
+        let table = w.add_table(&page, Frame::new(560, 300, 300, 200), &Settings::new())?;
+        w.add_column(&table, "Owner", TypeHint::Text, None)?;
+        w.merge_page_settings(&page, &settings(json!({"formTabOrder": [notes, heading]})))?;
+        let template = w.make_template(&page)?;
+        w.new_from_template(&template, &section)?;
+        Ok(())
+    })
+}
+
+/// Archive and tags: pages and a section archived and one retrieved, an archived canvas, tags on
+/// every kind with aliases, a rename and a merge, and typed metadata.
+pub fn archive_tags(root: &Path) -> Result<()> {
+    let mut nb = Notebook::create(root, Some("Written Archive and Tags"))?;
+    let nb_id = nb.notebook_node()?.id;
+    let (drafts, first, second, text, table) = nb.write(|w| {
+        let drafts = w.add_section(&nb_id, "Drafts", At::End)?;
+        let first = w.add_page(&drafts, "First draft", At::End)?;
+        let second = w.add_page(&drafts, "Second draft", At::End)?;
+        let old = w.add_section(&nb_id, "Old", At::End)?;
+        w.add_page(&old, "Very old", At::End)?;
+        let text = w.add_rich_text(
+            &second,
+            Frame::PAGE_TEXT,
+            Some(&payload::rich_text_from_plain("Keep this")),
+            &Settings::new(),
+        )?;
+        w.add_rich_text(
+            &first,
+            Frame::PAGE_TEXT,
+            Some(&payload::rich_text_from_plain("Superseded text")),
+            &Settings::new(),
+        )?;
+        let table = w.add_table_from_csv(
+            &second,
+            Frame::new(40, 400, 420, 180),
+            TABLE_CSV.as_bytes(),
+            &Settings::new(),
+        )?;
+        w.archive_node(&first, ArchiveReason::Superseded, None)?;
+        w.archive_node(&old, ArchiveReason::Other, Some("kept for reference"))?;
+        Ok((drafts, first, second, text, table))
+    })?;
+    nb.write(|w| {
+        let archived_canvas = w.add_rich_text(
+            &second,
+            Frame::new(40, 600, 300, 60),
+            Some(&payload::rich_text_from_plain("wrong figure")),
+            &Settings::new(),
+        )?;
+        w.archive_canvas(&archived_canvas, ArchiveReason::Wrong, None)?;
+        let back = w.add_rich_text(
+            &second,
+            Frame::new(400, 600, 200, 60),
+            None,
+            &Settings::new(),
+        )?;
+        w.archive_canvas(&back, ArchiveReason::Irrelevant, None)?;
+        w.retrieve_canvas(&back)?;
+        let (dataset, row): (String, String) = w.transaction().query_row(
+            "SELECT d.id, r.id FROM datasets d JOIN dataset_rows r ON r.dataset_id = d.id \
+             WHERE d.instance_id = ?1 ORDER BY r.seq LIMIT 1",
+            [&table],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )?;
+        let cafe = w.tag("Café")?;
+        w.add_tag_alias(&cafe, "Coffee")?;
+        let project = w.tag("Work/Project Alpha")?;
+        w.add_tag_alias(&project, "alpha")?;
+        let urgent = w.tag("Urgent")?;
+        let later = w.tag("Later")?;
+        w.apply_tag(&project, "node", &second)?;
+        w.apply_tag(&project, "node", &drafts)?;
+        w.apply_tag(&cafe, "instance", &text)?;
+        w.apply_tag(&urgent, "dataset", &dataset)?;
+        w.apply_tag(&urgent, "dataset_row", &row)?;
+        w.apply_tag(&later, "node", &second)?;
+        w.apply_tag(&later, "node", &first)?;
+        w.rename_tag(&urgent, "Urgent!")?;
+        w.merge_tags(&later, &project)?;
+        w.set_meta(
+            "node",
+            &second,
+            "Vendor",
+            &MetaValue::Text("Example Surveys".into()),
+            "user",
+        )?;
+        w.set_meta(
+            "node",
+            &second,
+            "vendor",
+            &MetaValue::Text("Ëxample Two".into()),
+            "user",
+        )?;
+        w.set_meta(
+            "instance",
+            &text,
+            "capture_time",
+            &MetaValue::Datetime {
+                epoch_secs: 1_767_600_000.0,
+                iso8601: "2026-01-05T08:00:00Z".into(),
+            },
+            "exif",
+        )?;
+        w.set_meta(
+            "instance",
+            &text,
+            "geo",
+            &MetaValue::Geo {
+                lat: 51.5007,
+                lon: -0.1246,
+            },
+            "user",
+        )?;
+        w.set_meta(
+            "dataset_row",
+            &row,
+            "place",
+            &MetaValue::Text("Westminster".into()),
+            "user",
+        )?;
+        Ok(())
+    })?;
+    // Retrieved in a later session.
+    nb.write(|w| w.retrieve_node(&first))
+}
+
 pub const TABLE_CSV: &str = "Task;Owner;Hours;Done;Due;Blank\n\
     Survey;Ada;3;TRUE;2026-01-05;\n\
     Report;;5.5;false;2026-01-06T09:30;\n\
@@ -415,6 +575,8 @@ pub fn build_all(out: &Path) -> Result<Vec<(&'static str, PathBuf)>> {
         ("written-every-kind", every_kind),
         ("written-tables", tables),
         ("written-forms", forms),
+        ("written-templates", templates),
+        ("written-archive-tags", archive_tags),
     ] {
         let root = out.join(format!("{name}.dunnenote"));
         build(&root)?;
