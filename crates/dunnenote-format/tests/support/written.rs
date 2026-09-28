@@ -8,6 +8,7 @@
 
 use std::path::{Path, PathBuf};
 
+use dunnenote_format::ingest::TypeHint;
 use dunnenote_format::{payload, At, Frame, Notebook, Result, Settings, Stroke, StrokePoint};
 use serde_json::{json, Value};
 
@@ -239,6 +240,69 @@ pub fn into_golden(root: &Path, golden: &Path) -> Result<()> {
     })
 }
 
+/// Tables: an imported CSV (numbers, booleans, dates, blanks) and JSON file, and a blank Editable
+/// table edited every way, across separate transactions.
+pub fn tables(root: &Path) -> Result<()> {
+    let mut nb = Notebook::create(root, Some("Written Tables"))?;
+    let nb_id = nb.notebook_node()?.id;
+    let (page, sheet) = nb.write(|w| {
+        let section = w.add_section(&nb_id, "Data", At::End)?;
+        let page = w.add_page(&section, "Tables", At::End)?;
+        w.add_table_from_csv(
+            &page,
+            Frame::new(40, 40, 480, 200),
+            TABLE_CSV.as_bytes(),
+            &Settings::new(),
+        )?;
+        w.add_table_from_json(
+            &page,
+            Frame::new(560, 40, 400, 200),
+            TABLE_JSON.as_bytes(),
+            &Settings::new(),
+        )?;
+        let sheet = w.add_table(&page, Frame::new(40, 280, 480, 360), &Settings::new())?;
+        Ok((page, sheet))
+    })?;
+    let rows: Vec<String> = nb
+        .dataset(&sheet)?
+        .expect("a table has a dataset")
+        .rows
+        .into_iter()
+        .map(|r| r.id)
+        .collect();
+    nb.write(|w| {
+        w.rename_column(&sheet, "c0", "Name")?;
+        w.rename_column(&sheet, "c1", "Hours")?;
+        let notes = w.add_column(&sheet, "Notes", TypeHint::Text, None)?;
+        w.set_cell(&sheet, &rows[0], "c0", &json!("Ada"))?;
+        w.set_cell(&sheet, &rows[0], "c1", &json!(7.5))?;
+        w.set_cell(&sheet, &rows[0], &notes, &json!("Ünïcode ✓"))?;
+        w.set_cell(&sheet, &rows[1], "c0", &json!(""))?;
+        w.delete_row(&sheet, &rows[2])?;
+        let mut cells = serde_json::Map::new();
+        cells.insert("c0".into(), json!("Grace"));
+        cells.insert("c1".into(), json!(3));
+        cells.insert(notes.clone(), json!(true));
+        w.insert_row(&sheet, &cells)?;
+        w.set_cell(&sheet, &rows[1], "c2", &json!("removed with its column"))?;
+        w.delete_column(&sheet, "c2")?;
+        w.move_column(&sheet, &notes, 0)?;
+        Ok(())
+    })?;
+    nb.write(|w| {
+        w.add_table(&page, Frame::new(560, 280, 300, 160), &Settings::new())?;
+        Ok(())
+    })
+}
+
+pub const TABLE_CSV: &str = "Task;Owner;Hours;Done;Due;Blank\n\
+    Survey;Ada;3;TRUE;2026-01-05;\n\
+    Report;;5.5;false;2026-01-06T09:30;\n\
+    \"Quoted; text\";Grace;-2;true;not a date;\n";
+
+pub const TABLE_JSON: &str = r#"[{"Item":"Tent","Qty":2,"Packed":true,"Meta":{"colour":"green"}},
+{"Item":"Stove","Qty":1.5,"Packed":null},{"Item":"Rope"}]"#;
+
 pub fn copy_dir(from: &Path, to: &Path) -> Result<()> {
     std::fs::create_dir_all(to)?;
     for entry in std::fs::read_dir(from)? {
@@ -267,6 +331,7 @@ pub fn build_all(out: &Path) -> Result<Vec<(&'static str, PathBuf)>> {
     for (name, build) in [
         ("written-minimal", minimal as fn(&Path) -> Result<()>),
         ("written-every-kind", every_kind),
+        ("written-tables", tables),
     ] {
         let root = out.join(format!("{name}.dunnenote"));
         build(&root)?;

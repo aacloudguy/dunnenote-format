@@ -40,6 +40,9 @@ use crate::position;
 use crate::schema::{create_schema, FORMAT_VERSION, SCHEMA_VERSION};
 use crate::settings_keys;
 
+mod tables;
+pub use tables::{DATASET_SCHEMA_VERSION, TABLE_SIZE};
+
 /// The folder extension every notebook has.
 pub const NOTEBOOK_EXT: &str = ".dunnenote";
 

@@ -286,7 +286,41 @@ pub fn verify(nb: &Notebook, level: VerifyLevel) -> Result<Report> {
         }
     }
 
-    // 7. Search index: a cache; being empty is normal (DunneNote rebuilds it on open).
+    // 7. Tables: the recorded row count, and cells that belong to a column and are scalars.
+    r.checks_run.push("tables");
+    let counts: Vec<(String, i64, i64)> = conn
+        .prepare(
+            "SELECT d.instance_id, d.row_count, (SELECT count(*) FROM dataset_rows r WHERE r.dataset_id = d.id) \
+             FROM datasets d WHERE d.row_count <> (SELECT count(*) FROM dataset_rows r WHERE r.dataset_id = d.id)",
+        )?
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
+        .collect::<rusqlite::Result<_>>()?;
+    for (canvas, stored, actual) in counts {
+        r.add(
+            Severity::Warning,
+            "tables",
+            format!("table {canvas} records {stored} rows but has {actual}"),
+        );
+    }
+    let stray: Vec<(String, String, String)> = conn
+        .prepare(
+            "SELECT d.instance_id, r.id, j.key FROM dataset_rows r JOIN datasets d ON d.id = r.dataset_id, \
+               json_each(r.cells) j \
+             WHERE j.type IN ('object', 'array') OR NOT EXISTS ( \
+               SELECT 1 FROM dataset_columns c WHERE c.dataset_id = d.id AND c.col_key = j.key) \
+             LIMIT 20",
+        )?
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
+        .collect::<rusqlite::Result<_>>()?;
+    for (canvas, row, key) in stray {
+        r.add(
+            Severity::Warning,
+            "tables",
+            format!("table {canvas} row {row} has a cell {key:?} that is not a column value"),
+        );
+    }
+
+    // 8. Search index: a cache; being empty is normal (DunneNote rebuilds it on open).
     r.checks_run.push("search_index");
     let indexed: i64 = conn.query_row("SELECT count(*) FROM search_index", [], |row| row.get(0))?;
     if indexed == 0 && !canvases.is_empty() {

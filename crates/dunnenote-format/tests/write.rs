@@ -544,7 +544,7 @@ fn writing_empties_the_search_index_so_dunnenote_rebuilds_it() {
 fn every_written_notebook_verifies_clean_and_reads_back() {
     let dir = TempDir::new().unwrap();
     let built = written::build_all(dir.path()).unwrap();
-    assert_eq!(built.len(), 3);
+    assert_eq!(built.len(), 4);
     for (name, root) in &built {
         assert_clean(root);
         assert_eq!(
@@ -559,7 +559,8 @@ fn every_written_notebook_verifies_clean_and_reads_back() {
         );
     }
 
-    let every = Notebook::open(&built[1].1).unwrap();
+    let path_of = |name: &str| &built.iter().find(|(n, _)| *n == name).unwrap().1;
+    let every = Notebook::open(path_of("written-every-kind")).unwrap();
     let kinds: Vec<CanvasKind> = every
         .pages()
         .unwrap()
@@ -599,7 +600,7 @@ fn every_written_notebook_verifies_clean_and_reads_back() {
 
     // Writing into DunneNote's notebook kept everything it had.
     let golden = Notebook::open(written::fixtures().join("every-kind.dunnenote")).unwrap();
-    let changed = Notebook::open(&built[2].1).unwrap();
+    let changed = Notebook::open(path_of("written-into-golden")).unwrap();
     let before = golden.counts().unwrap();
     let after = changed.counts().unwrap();
     assert_eq!(after.pages, before.pages + 1);

@@ -18,10 +18,11 @@ editable.
 | Library: open, version gate, read every canvas kind, tags, blobs; verify | available (pre-release) |
 | Library: export to JSON, Markdown and CSV | available (pre-release) |
 | Library: create notebooks; write sections, pages, rich text, sketches, pictures, picture markup, canvas groups | available (pre-release) |
-| Library: write tables, forms, calendars, tags, archive, templates, captions API | planned |
+| Library: write tables (import CSV/JSON, blank Editable tables, edit rows and columns) | available (pre-release) |
+| Library: write forms, calendars, tags, archive, templates, captions API | planned |
 | `dnfmt inspect`, `ls`, `cat`, `verify`, `export` | available (pre-release) |
-| `dnfmt new`, `add-section`, `add-page`, `add-canvas rich-text\|sketch\|picture` | available (pre-release) |
-| `dnfmt tag`, `archive`, `form submit`, `add-canvas` for tables and calendars | planned |
+| `dnfmt new`, `add-section`, `add-page`, `add-canvas rich-text\|sketch\|picture\|table`, `table` | available (pre-release) |
+| `dnfmt tag`, `archive`, `form submit`, `add-canvas` for calendars | planned |
 | `SPEC.md` — full specification with a writer checklist | in progress |
 | Golden test notebooks produced by DunneNote itself ([fixtures](fixtures/README.md)) | available |
 
@@ -61,6 +62,9 @@ P=$(dnfmt add-page ~/Notes/Trip.dunnenote "$S" "Day 1")
 dnfmt add-canvas ~/Notes/Trip.dunnenote "$P" rich-text notes.md
 dnfmt add-canvas ~/Notes/Trip.dunnenote "$P" picture map.png --alt="Route map"
 dnfmt add-canvas ~/Notes/Trip.dunnenote "$P" sketch strokes.json --size=400,300
+dnfmt add-canvas ~/Notes/Trip.dunnenote "$P" table bookings.csv    # a Data Table
+T=$(dnfmt add-canvas ~/Notes/Trip.dunnenote "$P" table)             # an empty Editable table
+dnfmt table ~/Notes/Trip.dunnenote "$T" add-row "Column 1=Tent" "Column 2=2"
 ```
 
 Or from Rust:

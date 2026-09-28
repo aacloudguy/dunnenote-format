@@ -13,8 +13,8 @@ The key words MUST, MUST NOT, SHOULD and MAY are to be interpreted as described 
 5. Identifiers, sibling positions, timestamps — [below](#5-identifiers-sibling-positions-timestamps)
 6. Blobs: addressing, sentinel blobs, reference counts — [below](#6-blobs)
 7. Canvases: common columns, settings merge rule, reserved settings keys *(to be written)*
-8. Payloads: rich text and sketch [below](#8-payloads-rich-text-and-sketch); tables, calendar,
-   per-kind settings *(to be written)*
+8. Payloads: rich text and sketch [below](#8-payloads-rich-text-and-sketch); tables
+   [below](#tables); calendar, per-kind settings *(to be written)*
 9. Roles: captions, forms, templates *(to be written)*
 10. Groups, layering, archive *(to be written)*
 11. Tags and metadata, fold v1 *(to be written)*
@@ -90,6 +90,53 @@ The key words MUST, MUST NOT, SHOULD and MAY are to be interpreted as described 
   the picture's canvas id, with coordinates as fractions of the natural image. No row means no
   markup.
 
+### Tables
+
+A table canvas is either a **Data Table** (`kind = 'database'`) or an **Editable table**
+(`kind = 'spreadsheet'`). Both have exactly one `datasets` row (`instance_id` unique,
+`shape = 'table'`, `schema_version` 1) with its `dataset_columns` and `dataset_rows`.
+
+- **The kind decides whether it changes.** A Data Table holds what was imported and MUST NOT be
+  edited: no column or row is added, changed or removed. Only an Editable table is edited.
+- **Source.** A Data Table's `source_hash` is the imported file itself (the CSV or JSON bytes) and
+  `source_kind` is `csv` or `json`. An Editable table created empty points at the Editable table
+  sentinel (§6) with `source_kind = 'paste'`: three columns `c0`–`c2` named `Column 1`–`Column 3`
+  (`type_hint = 'unknown'`, positions 0–2) and three rows whose `cells` are `{}`. A form's new
+  answers table uses the same sentinel with no columns, no rows and `source_kind = 'csv'`.
+- **Columns.** `col_key` matches `^[A-Za-z0-9_]+$` and is unique in its table; keys are `c0`,
+  `c1`, … and a new column takes one more than the highest numeric `c` key, so a deleted key is
+  never reused. `name` is what is shown. `type_hint` is `text`, `number`, `date`, `boolean` or
+  `unknown`. Columns display in `position` order, then by `col_key`; positions need not be
+  distinct or contiguous. Deleting a column MUST also remove its key from every row's `cells`.
+- **Rows.** `cells` is a JSON object mapping column keys to scalars (string, number, boolean or
+  null) — never an object or array; a missing key is an empty cell. Rows display in `seq` order.
+  Imported rows are numbered 0, 1, …; a new row takes one more than the highest `seq`, and
+  deleting a row leaves a gap. A string cell is at most 64 KiB. Deleting a row also deletes the
+  `item_tags` and `item_meta` rows with `source_kind = 'dataset_row'` and its id.
+- **`row_count`** MUST equal the number of the table's rows; a writer recounts it
+  (`SELECT count(*)`) in the same transaction as any row change and bumps `datasets.updated_at`
+  on every change.
+- **Import rules** (how DunneNote turns a file into columns and rows; a writer that imports MUST
+  follow them so its tables read the same):
+  - A UTF-8 byte-order mark is dropped; empty or whitespace-only input is refused; at most 5 MiB.
+  - CSV: the delimiter is whichever of `,`, `;` and tab occurs most in the first 8 KiB (comma on
+    a tie). The first record is the header; fields are trimmed; rows may be ragged and the widest
+    sets the column count. A blank header is `Column N`.
+  - JSON: an array of objects gives a column per key, in order of first appearance; an array of
+    arrays gives positional columns `Column 1`, …; an array of scalars gives one column `value`;
+    one object gives `Key` / `Value` rows; if the file is not one JSON document it is read as JSON
+    Lines. Nested objects and arrays are stored as compact JSON text; `null` is omitted.
+  - A column's `type_hint` is `number`, `boolean` or `date` when every value present is of that
+    type (CSV: an integer or finite decimal; `true`/`false` in any case; text starting
+    `YYYY-MM-DD` followed by nothing, `T` or a space), `unknown` when it has no values, and `text`
+    otherwise. CSV numbers and booleans in such columns are stored as JSON numbers and booleans;
+    all else is a string. Empty values are omitted from `cells`.
+  - At most 256 columns (more is refused) and 50 000 rows (the rest are dropped); longer strings
+    are cut to 64 KiB at a character boundary.
+- **Typed cells.** Text typed into an Editable table cell is stored as a number when, trimmed, it
+  matches `-?[0-9]+(\.[0-9]+)?` (written as JavaScript writes numbers: `7`, not `7.0`), as `""`
+  when blank, and otherwise as the text exactly as typed.
+
 ## 13. Writer checklist
 
 A conforming **Writer**:
@@ -118,6 +165,9 @@ A conforming **Writer**:
     of blobs it added exist, and rolls back otherwise.
 12. Never deletes content it does not understand, never collects unused blobs, never deletes
     `.archive/` snapshots.
+13. Changes only Editable tables, never Data Tables; keeps every row's `cells` to scalars under
+    existing column keys; and recounts `datasets.row_count` whenever it adds or removes a row
+    ([Tables](#tables)).
 
 `dunnenote-format` implements this checklist; its conformance suite includes notebooks it writes
 being opened by DunneNote's own code, health-checked with no findings, and read back field for
@@ -150,8 +200,5 @@ sections above:
 - **Templates.** A template page has `is_template = 1` and its name ends in ` (template)`.
   Pictures in it point at the placeholder sentinel blob with settings `{"placeholder": true}`;
   text canvases keep their content only when their settings carry `templateKeepContent: true`.
-- **Blank Editable tables** are 3 columns × 3 rows with column keys `c0`, `c1`, `c2` and names
-  `Column 1` … `Column 3`, and `datasets.source_kind` = `paste`. A blank form answers table
-  starts with no columns and records `source_kind` = `csv`.
 - **Cleared text** in a template (and in pages made from it) is the empty document
   `{"type":"doc","content":[{"type":"paragraph"}]}`.

@@ -176,3 +176,52 @@ fn editing_refuses_what_it_cannot_do_safely() {
         "only the page's own text box"
     );
 }
+
+#[test]
+fn tables_from_the_command_line() {
+    let dir = TempDir::new().unwrap();
+    let nb_path = dir.path().join("Kit.dunnenote");
+    let nb = nb_path.to_str().unwrap();
+    let csv = dir.path().join("kit.csv");
+    std::fs::write(&csv, "Item,Qty\nTent,2\nStove,1\n").unwrap();
+    id(&["new", nb], None);
+    let page = id(&["add-page", nb, "root", "Kit", "--no-text"], None);
+
+    let data = id(
+        &["add-canvas", nb, &page, "table", csv.to_str().unwrap()],
+        None,
+    );
+    let sheet = id(&["add-canvas", nb, &page, "table"], None);
+    let key = dnfmt(&["table", nb, &sheet, "add-column", "Qty"], None);
+    assert!(key.status.success());
+    assert_eq!(String::from_utf8_lossy(&key.stdout).trim(), "c3");
+    let row = id(
+        &["table", nb, &sheet, "add-row", "column 1=Rope", "qty=10"],
+        None,
+    );
+    id(&["table", nb, &sheet, "set", &row, "c1", "blue"], None);
+
+    // A Data Table keeps what it was imported with.
+    let refused = dnfmt(&["table", nb, &data, "add-row", "Item=Map"], None);
+    assert_eq!(refused.status.code(), Some(1));
+    assert!(String::from_utf8_lossy(&refused.stderr).contains("Editable"));
+
+    let verify = dnfmt(&["verify", nb, "--full", "--strict"], None);
+    assert!(
+        verify.status.success(),
+        "{}",
+        String::from_utf8_lossy(&verify.stdout)
+    );
+    let read = Notebook::open(&nb_path).unwrap();
+    let imported = read.dataset(&data).unwrap().unwrap();
+    assert_eq!(imported.source_kind, "csv");
+    assert_eq!(imported.row_count, 2);
+    let edited = read.dataset(&sheet).unwrap().unwrap();
+    assert_eq!(edited.row_count, 4);
+    let last = edited.rows.last().unwrap();
+    assert_eq!(last.id, row);
+    assert_eq!(
+        serde_json::Value::Object(last.cells.clone()),
+        serde_json::json!({"c0": "Rope", "c3": 10, "c1": "blue"})
+    );
+}
