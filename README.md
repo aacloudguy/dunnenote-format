@@ -17,9 +17,11 @@ editable.
 | Canonical schema (`schema/v18.sql`), generated from DunneNote | available |
 | Library: open, version gate, read every canvas kind, tags, blobs; verify | available (pre-release) |
 | Library: export to JSON, Markdown and CSV | available (pre-release) |
-| Library: write every canvas kind | planned |
+| Library: create notebooks; write sections, pages, rich text, sketches, pictures, picture markup, canvas groups | available (pre-release) |
+| Library: write tables, forms, calendars, tags, archive, templates, captions API | planned |
 | `dnfmt inspect`, `ls`, `cat`, `verify`, `export` | available (pre-release) |
-| `dnfmt new`, `add-*`, `tag`, `archive`, `form submit` | planned |
+| `dnfmt new`, `add-section`, `add-page`, `add-canvas rich-text\|sketch\|picture` | available (pre-release) |
+| `dnfmt tag`, `archive`, `form submit`, `add-canvas` for tables and calendars | planned |
 | `SPEC.md` — full specification with a writer checklist | in progress |
 | Golden test notebooks produced by DunneNote itself ([fixtures](fixtures/README.md)) | available |
 
@@ -45,10 +47,46 @@ cargo build --release
 - **JSON**: everything in the notebook as one document (pictures and files are referenced by
   their SHA-256, not embedded). The document shape is versioned (`export_version`).
 
-`dnfmt` opens notebooks read-only and never takes DunneNote's lock, so it is safe to run while
-the notebook is open in DunneNote. It changes nothing in the notebook. Like any SQLite reader, it
+The reading commands open notebooks read-only and never take DunneNote's lock, so they are safe to
+run while the notebook is open in DunneNote. They change nothing in the notebook. Like any SQLite reader, it
 may leave the database's two standard companion files, `notebook.db-wal` (empty) and
 `notebook.db-shm`, which DunneNote itself creates whenever it opens the notebook.
+
+## Write
+
+```sh
+dnfmt new ~/Notes/Trip.dunnenote --name="Summer Trip"      # prints the notebook's root id
+S=$(dnfmt add-section ~/Notes/Trip.dunnenote root "Plans")
+P=$(dnfmt add-page ~/Notes/Trip.dunnenote "$S" "Day 1")
+dnfmt add-canvas ~/Notes/Trip.dunnenote "$P" rich-text notes.md
+dnfmt add-canvas ~/Notes/Trip.dunnenote "$P" picture map.png --alt="Route map"
+dnfmt add-canvas ~/Notes/Trip.dunnenote "$P" sketch strokes.json --size=400,300
+```
+
+Or from Rust:
+
+```rust
+use dunnenote_format::{payload, At, Frame, Notebook, Settings};
+
+let mut nb = Notebook::create("Trip.dunnenote", None)?;
+let root = nb.notebook_node()?.id;
+nb.write(|w| {
+    let page = w.add_page(&root, "Day 1", At::End)?;
+    let doc = payload::rich_text_from_markdown("# Day 1\n\nTrain at **9:10**.");
+    w.add_rich_text(&page, Frame::PAGE_TEXT, Some(&doc), &Settings::new())?;
+    Ok(())
+})?;
+```
+
+Editing follows the format's [writer checklist](SPEC.md#13-writer-checklist):
+
+- The commands refuse a notebook that is open in DunneNote: close it there first. They lock it
+  while they work, so DunneNote cannot open it at the same moment.
+- Each command is one transaction: it either happens completely or not at all.
+- Rich text and sketches are checked against what DunneNote can display without loss.
+- The search index is emptied, and DunneNote rebuilds it the next time it opens the notebook.
+- Notebooks written this way are part of the conformance suite: DunneNote's own code opens them,
+  runs its full health check (no findings) and reads back exactly what was written.
 
 ## Supported versions
 

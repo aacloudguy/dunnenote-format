@@ -14,15 +14,19 @@ use crate::model::*;
 
 /// An open notebook (a `.dunnenote` directory).
 ///
-/// Opening is read-only and does **not** take the notebook's lock, so a notebook that is open in
-/// DunneNote can still be read (SQLite's write-ahead log keeps the reader consistent). Use
-/// [`Notebook::locked_by_another_process`] to find out whether DunneNote has it open.
+/// [`Notebook::open`] is read-only and does **not** take the notebook's lock, so a notebook that
+/// is open in DunneNote can still be read (SQLite's write-ahead log keeps the reader consistent).
+/// Use [`Notebook::locked_by_another_process`] to find out whether DunneNote has it open.
+/// [`Notebook::open_writable`] and [`Notebook::create`] take the lock (see [`crate::write`]).
 pub struct Notebook {
-    root: PathBuf,
-    manifest: Manifest,
-    compat: Compat,
-    schema_version: u32,
-    conn: Connection,
+    pub(crate) root: PathBuf,
+    pub(crate) manifest: Manifest,
+    pub(crate) compat: Compat,
+    pub(crate) schema_version: u32,
+    pub(crate) conn: Connection,
+    /// Held while the notebook is open for writing. Declared after `conn` so the database
+    /// closes before the lock is released.
+    pub(crate) lock: Option<File>,
 }
 
 impl std::fmt::Debug for Notebook {
@@ -139,6 +143,7 @@ impl Notebook {
             compat,
             schema_version,
             conn,
+            lock: None,
         })
     }
 
@@ -160,9 +165,17 @@ impl Notebook {
         &self.conn
     }
 
+    /// Whether this handle was opened for writing (and holds the notebook's lock).
+    pub fn is_writable(&self) -> bool {
+        self.lock.is_some()
+    }
+
     /// Whether another process (normally DunneNote) holds the notebook's lock. Never creates the
-    /// lock file.
+    /// lock file. Always `false` for a handle that holds the lock itself.
     pub fn locked_by_another_process(&self) -> Result<bool> {
+        if self.lock.is_some() {
+            return Ok(false);
+        }
         let path = self.root.join(".dunnenote.lock");
         if !path.is_file() {
             return Ok(false);
@@ -577,22 +590,7 @@ impl Notebook {
 
     /// Where a blob's bytes live: `blobs/sha256/<aa>/<bb>/<hash>.bin`.
     pub fn blob_path(&self, hash: &str) -> Result<PathBuf> {
-        if hash.len() != 64
-            || !hash
-                .bytes()
-                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
-        {
-            return Err(Error::Malformed(format!(
-                "{hash:?} is not a lowercase SHA-256 hex digest"
-            )));
-        }
-        Ok(self
-            .root
-            .join("blobs")
-            .join("sha256")
-            .join(&hash[0..2])
-            .join(&hash[2..4])
-            .join(format!("{hash}.bin")))
+        blob_path_in(&self.root, hash)
     }
 
     /// A blob's bytes, checked against its hash.
@@ -634,4 +632,23 @@ impl Notebook {
             blob_bytes: one("SELECT coalesce(sum(size_bytes), 0) FROM blobs")?,
         })
     }
+}
+
+/// Where a blob's bytes live under a notebook root.
+pub(crate) fn blob_path_in(root: &Path, hash: &str) -> Result<PathBuf> {
+    if hash.len() != 64
+        || !hash
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    {
+        return Err(Error::Malformed(format!(
+            "{hash:?} is not a lowercase SHA-256 hex digest"
+        )));
+    }
+    Ok(root
+        .join("blobs")
+        .join("sha256")
+        .join(&hash[0..2])
+        .join(&hash[2..4])
+        .join(format!("{hash}.bin")))
 }

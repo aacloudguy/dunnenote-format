@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-/// Everything that can go wrong opening or reading a notebook.
+/// Everything that can go wrong opening, reading or writing a notebook.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("{0} is not a DunneNote notebook: {1}")]
@@ -32,6 +32,18 @@ pub enum Error {
 
     #[error("stored data is malformed: {0}")]
     Malformed(String),
+
+    #[error("{0}")]
+    Invalid(String),
+
+    #[error("the notebook is open in another program (normally DunneNote); close it there first")]
+    Locked,
+
+    #[error("this notebook cannot be changed: {0}")]
+    ReadOnly(String),
+
+    #[error("refused to change the notebook: {0}")]
+    Refused(String),
 
     #[error("blob {hash} does not match its content (hash {actual})")]
     BlobCorrupt { hash: String, actual: String },

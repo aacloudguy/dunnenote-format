@@ -1,19 +1,19 @@
-//! `dnfmt` — inspect, verify and read DunneNote notebooks without DunneNote.
+//! `dnfmt` — inspect, verify, export and edit DunneNote notebooks without DunneNote.
 
 use std::process::ExitCode;
 
 use std::path::Path;
 
 use dunnenote_format::{
-    export,
+    export, payload,
     text::{plain_text, utc_date, utc_datetime},
-    verify, CanvasKind, Error, Node, NodeKind, Notebook, Severity, VerifyLevel, FORMAT_VERSION,
-    SCHEMA_VERSION,
+    verify, At, CanvasKind, Error, Frame, Node, NodeKind, Notebook, Settings, Severity, Stroke,
+    VerifyLevel, FORMAT_VERSION, SCHEMA_VERSION,
 };
-use serde_json::json;
+use serde_json::{json, Value};
 
 const USAGE: &str = "\
-dnfmt — read and check DunneNote notebooks (.dunnenote)
+dnfmt — read, check and edit DunneNote notebooks (.dunnenote)
 
 USAGE:
     dnfmt inspect <notebook> [--json]      What the notebook is and what it holds
@@ -29,10 +29,24 @@ USAGE:
     dnfmt export --json <notebook> [<file>]
                                            Everything, as one JSON document
                                            (to standard output without <file>)
+
+    dnfmt new <notebook> [--name=<name>]    Create an empty notebook (folder ends in .dunnenote)
+    dnfmt add-section <notebook> <parent-id|root> <name> [--first]
+    dnfmt add-page <notebook> <parent-id|root> <name> [--first] [--no-text]
+                                           A page, with DunneNote's empty text box
+                                           unless --no-text
+    dnfmt add-canvas <notebook> <page-id> rich-text [<file>|-]
+                                           Text from Markdown (.md), a ProseMirror
+                                           document (.json) or plain text; - is stdin
+    dnfmt add-canvas <notebook> <page-id> sketch [<strokes.json>]
+    dnfmt add-canvas <notebook> <page-id> picture <image> [--alt=<text>]
+        canvas options: [--at=<x>,<y>] [--size=<width>,<height>]
     dnfmt --version
 
-Notebooks are opened read-only; dnfmt never changes them. Exports never
-overwrite: the output folder must be new or empty, the output file new.";
+Reading commands open notebooks read-only and never change them. Editing
+commands refuse a notebook that is open in DunneNote, print the new item's id,
+and leave the search index for DunneNote to rebuild on its next open. Exports
+never overwrite: the output folder must be new or empty, the output file new.";
 
 struct Args {
     positional: Vec<String>,
@@ -47,7 +61,27 @@ impl Args {
     fn flag(&self, name: &str) -> bool {
         self.flags.iter().any(|f| f == name)
     }
+    /// The value of `--name=value`.
+    fn value(&self, name: &str) -> Option<&str> {
+        self.flags
+            .iter()
+            .find_map(|f| f.strip_prefix(name)?.strip_prefix('='))
+    }
 }
+
+const BOOL_FLAGS: [&str; 10] = [
+    "--json",
+    "--full",
+    "--strict",
+    "--help",
+    "--md",
+    "--csv",
+    "--include-archived",
+    "--first",
+    "--no-text",
+    "--version",
+];
+const VALUE_FLAGS: [&str; 4] = ["--name", "--at", "--size", "--alt"];
 
 fn main() -> ExitCode {
     let args = Args::parse();
@@ -59,10 +93,8 @@ fn main() -> ExitCode {
         return ExitCode::SUCCESS;
     }
     if let Some(unknown) = args.flags.iter().find(|f| {
-        !matches!(
-            f.as_str(),
-            "--json" | "--full" | "--strict" | "--help" | "--md" | "--csv" | "--include-archived"
-        )
+        let key = f.split('=').next().unwrap_or_default();
+        !(BOOL_FLAGS.contains(&f.as_str()) || (f.contains('=') && VALUE_FLAGS.contains(&key)))
     }) {
         eprintln!("dnfmt: unknown option {unknown}\n\n{USAGE}");
         return ExitCode::from(2);
@@ -74,6 +106,12 @@ fn main() -> ExitCode {
         ["cat", path, id] => cat(path, id),
         ["export", path, rest @ ..] if rest.len() <= 1 => {
             export_cmd(&args, path, rest.first().copied())
+        }
+        ["new", path] => new_cmd(path, args.value("--name")),
+        ["add-section", path, parent, name] => add_node(path, parent, name, false, &args),
+        ["add-page", path, parent, name] => add_node(path, parent, name, true, &args),
+        ["add-canvas", path, page, kind, rest @ ..] if rest.len() <= 1 => {
+            add_canvas(path, page, kind, rest.first().copied(), &args)
         }
         ["verify", path] => {
             return verify_cmd(
@@ -402,6 +440,158 @@ fn verify_cmd(path: &str, full: bool, as_json: bool, strict: bool) -> ExitCode {
     } else {
         ExitCode::SUCCESS
     }
+}
+
+// ---- editing ------------------------------------------------------------------------------------
+
+fn bad_input(msg: impl Into<String>) -> Error {
+    Error::Invalid(msg.into())
+}
+
+fn new_cmd(path: &str, name: Option<&str>) -> Result<(), Error> {
+    let nb = Notebook::create(path, name)?;
+    println!("{}", nb.notebook_node()?.id);
+    eprintln!("created {path}");
+    Ok(())
+}
+
+fn add_node(path: &str, parent: &str, name: &str, page: bool, args: &Args) -> Result<(), Error> {
+    let mut nb = Notebook::open_writable(path)?;
+    let parent = if parent == "root" {
+        nb.notebook_node()?.id
+    } else {
+        parent.to_string()
+    };
+    let at = if args.flag("--first") {
+        At::Start
+    } else {
+        At::End
+    };
+    let with_text = page && !args.flag("--no-text");
+    let id = nb.write(|w| {
+        if !page {
+            return w.add_section(&parent, name, at);
+        }
+        let id = w.add_page(&parent, name, at)?;
+        if with_text {
+            w.add_rich_text(&id, Frame::PAGE_TEXT, None, &Settings::new())?;
+        }
+        Ok(id)
+    })?;
+    println!("{id}");
+    Ok(())
+}
+
+fn pair(args: &Args, flag: &str) -> Result<Option<(i64, i64)>, Error> {
+    let Some(v) = args.value(flag) else {
+        return Ok(None);
+    };
+    let parsed = v
+        .split_once(',')
+        .and_then(|(a, b)| Some((a.trim().parse().ok()?, b.trim().parse().ok()?)));
+    parsed
+        .map(Some)
+        .ok_or_else(|| bad_input(format!("{flag} takes two whole numbers, like {flag}=40,40")))
+}
+
+/// Below everything already on the page, at the left margin DunneNote uses.
+fn next_free_spot(nb: &Notebook, page: &str) -> Result<(i64, i64), Error> {
+    let bottom = nb
+        .canvases(page)?
+        .iter()
+        .filter(|c| !c.is_hidden())
+        .map(|c| c.y + c.height)
+        .max();
+    Ok(match bottom {
+        None => (40, 40),
+        Some(b) => (40, b + 20),
+    })
+}
+
+fn read_input(file: &str) -> Result<String, Error> {
+    if file == "-" {
+        let mut s = String::new();
+        std::io::Read::read_to_string(&mut std::io::stdin(), &mut s)?;
+        Ok(s)
+    } else {
+        Ok(std::fs::read_to_string(file)?)
+    }
+}
+
+fn rich_text_from_file(file: Option<&str>) -> Result<Option<Value>, Error> {
+    let Some(file) = file else { return Ok(None) };
+    let text = read_input(file)?;
+    let lower = file.to_lowercase();
+    Ok(Some(if lower.ends_with(".json") {
+        serde_json::from_str(&text).map_err(|e| bad_input(format!("{file} is not JSON: {e}")))?
+    } else if lower.ends_with(".txt") {
+        payload::rich_text_from_plain(&text)
+    } else {
+        payload::rich_text_from_markdown(&text)
+    }))
+}
+
+fn strokes_from_file(file: Option<&str>) -> Result<Vec<Stroke>, Error> {
+    let Some(file) = file else {
+        return Ok(Vec::new());
+    };
+    let v: Value = serde_json::from_str(&read_input(file)?)
+        .map_err(|e| bad_input(format!("{file} is not JSON: {e}")))?;
+    let list = v.get("strokes").cloned().unwrap_or(v);
+    serde_json::from_value(list).map_err(|e| {
+        bad_input(format!(
+            "{file}: expected a list of strokes ({{\"id\", \"points\": [{{\"x\", \"y\", \"p\"}}], \"color\", \"width\", \"tool\"}}): {e}"
+        ))
+    })
+}
+
+fn add_canvas(
+    path: &str,
+    page: &str,
+    kind: &str,
+    file: Option<&str>,
+    args: &Args,
+) -> Result<(), Error> {
+    let mut nb = Notebook::open_writable(path)?;
+    if nb.node(page)?.kind != NodeKind::Page {
+        return Err(bad_input(format!("{page} is not a page")));
+    }
+    let (x, y) = match pair(args, "--at")? {
+        Some(at) => at,
+        None => next_free_spot(&nb, page)?,
+    };
+    let size = pair(args, "--size")?;
+    let frame = |w: i64, h: i64| {
+        let (w, h) = size.unwrap_or((w, h));
+        Frame::new(x, y, w, h)
+    };
+    let id = match kind {
+        "rich-text" | "text" => {
+            let doc = rich_text_from_file(file)?;
+            nb.write(|w| w.add_rich_text(page, frame(720, 320), doc.as_ref(), &Settings::new()))?
+        }
+        "sketch" => {
+            let strokes = strokes_from_file(file)?;
+            nb.write(|w| w.add_sketch(page, frame(560, 400), &strokes, &Settings::new()))?
+        }
+        "picture" => {
+            let file = file.ok_or_else(|| bad_input("add-canvas picture needs an image file"))?;
+            let image = std::fs::read(file)?;
+            let mut settings = Settings::new();
+            if let Some(alt) = args.value("--alt") {
+                settings.insert("alt".into(), Value::String(alt.into()));
+            }
+            nb.write(|w| w.add_picture(page, (x, y), size, &image, &settings))?
+        }
+        other => {
+            return Err(bad_input(format!(
+                "unknown canvas kind {other:?}; use rich-text, sketch or picture \
+                 (tables, calendars and forms come in a later release)"
+            )))
+        }
+    };
+    println!("{id}");
+    Ok(())
 }
 
 fn human_bytes(n: i64) -> String {

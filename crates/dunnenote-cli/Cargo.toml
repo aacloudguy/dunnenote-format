@@ -16,5 +16,8 @@ path = "src/main.rs"
 dunnenote-format = { path = "../dunnenote-format" }
 serde_json = { workspace = true }
 
+[dev-dependencies]
+tempfile = { workspace = true }
+
 [lints]
 workspace = true
