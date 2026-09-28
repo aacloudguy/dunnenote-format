@@ -37,9 +37,26 @@ fn content(nb: &Notebook, c: &Canvas) -> Value {
             "id": e.id, "uid": e.uid, "summary": e.summary, "location": e.location,
             "description": e.description, "start_utc": e.start_utc, "end_utc": e.end_utc,
             "all_day": e.all_day, "tzid": e.tzid,
+            "source_ordinal": e.source_ordinal, "url": e.url,
+            "organizer_value": e.organizer_value, "organizer_cn": e.organizer_cn,
+            "status": e.status, "categories": json_list(&e.categories),
+            "rrule_text": e.rrule_text, "attachments": json_list(&e.attachments),
+            "attendees": e.attendees.iter().map(|a| json!({
+                "value": a.value, "cn": a.cn, "role": a.role, "partstat": a.partstat, "rsvp": a.rsvp,
+            })).collect::<Vec<_>>(),
+            "dtstamp_utc": e.dtstamp_utc, "last_modified_utc": e.last_modified_utc,
+            "sequence": e.sequence,
         })).collect::<Vec<_>>()})
         }
     }
+}
+
+/// A stored JSON list, read as DunneNote reads it (unreadable or absent is empty).
+fn json_list(raw: &Option<String>) -> Value {
+    raw.as_deref()
+        .and_then(|s| serde_json::from_str::<Value>(s).ok())
+        .filter(Value::is_array)
+        .unwrap_or_else(|| json!([]))
 }
 
 fn tag_entry(nb: &Notebook, kind: &str, id: &str, out: &mut Vec<Value>) {

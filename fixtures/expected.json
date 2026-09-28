@@ -5,7 +5,7 @@
         {
           "depth": 0,
           "kind": "notebook",
-          "id": "01a0e92f-2e09-7520-8e27-cc1dcb923428",
+          "id": "01a0ea27-a162-75d1-a0fc-b6308c1a14cf",
           "name": "Minimal",
           "is_template": false,
           "is_archived": false,
@@ -14,7 +14,7 @@
         {
           "depth": 1,
           "kind": "group",
-          "id": "01a0e92f-2e0a-7ef0-9ecf-920de2202292",
+          "id": "01a0ea27-a163-7070-94e2-247949e7f55c",
           "name": "Section",
           "is_template": false,
           "is_archived": false,
@@ -23,7 +23,7 @@
         {
           "depth": 2,
           "kind": "page",
-          "id": "01a0e92f-2e0b-7153-851d-15dcfcabbb5f",
+          "id": "01a0ea27-a164-7500-b964-bac33f2eda7f",
           "name": "Empty page",
           "is_template": false,
           "is_archived": false,
@@ -31,7 +31,7 @@
         }
       ],
       "pages": {
-        "01a0e92f-2e0b-7153-851d-15dcfcabbb5f": {
+        "01a0ea27-a164-7500-b964-bac33f2eda7f": {
           "canvases": [],
           "groups": []
         }
@@ -45,7 +45,7 @@
         {
           "depth": 0,
           "kind": "notebook",
-          "id": "01a0e92f-2e82-7db0-a05f-a5715c9ed9dc",
+          "id": "01a0ea27-a1ba-7900-8d44-78cd62fe69dc",
           "name": "Every Kind",
           "is_template": false,
           "is_archived": false,
@@ -54,7 +54,7 @@
         {
           "depth": 1,
           "kind": "group",
-          "id": "01a0e92f-2e83-7052-a1cd-63e2614b7628",
+          "id": "01a0ea27-a1bb-7611-bade-e83eeda90379",
           "name": "Research",
           "is_template": false,
           "is_archived": false,
@@ -63,7 +63,7 @@
         {
           "depth": 2,
           "kind": "page",
-          "id": "01a0e92f-2e83-7052-a1cd-63fdf20d80a0",
+          "id": "01a0ea27-a1bb-7611-bade-e847e0d87b29",
           "name": "Overview",
           "is_template": false,
           "is_archived": false,
@@ -72,7 +72,7 @@
         {
           "depth": 2,
           "kind": "group",
-          "id": "01a0e92f-2e84-7872-bdfd-8abaadd6de01",
+          "id": "01a0ea27-a1bc-76f2-a551-63d468d6d6ef",
           "name": "Background",
           "is_template": false,
           "is_archived": false,
@@ -81,7 +81,7 @@
         {
           "depth": 3,
           "kind": "page",
-          "id": "01a0e92f-2e85-7161-9925-73fbdb5e4b58",
+          "id": "01a0ea27-a1bd-7fd3-ac41-57689c548575",
           "name": "Reading list",
           "is_template": false,
           "is_archived": false,
@@ -90,7 +90,7 @@
         {
           "depth": 1,
           "kind": "group",
-          "id": "01a0e92f-2e85-7161-9925-740054ac08fe",
+          "id": "01a0ea27-a1bd-7fd3-ac41-577eda6c740b",
           "name": "Planning",
           "is_template": false,
           "is_archived": false,
@@ -99,7 +99,7 @@
         {
           "depth": 2,
           "kind": "page",
-          "id": "01a0e92f-2e86-7712-91ce-2224b2f5759c",
+          "id": "01a0ea27-a1bf-77d3-891a-4af946eeb371",
           "name": "Schedule",
           "is_template": false,
           "is_archived": false,
@@ -107,10 +107,10 @@
         }
       ],
       "pages": {
-        "01a0e92f-2e83-7052-a1cd-63fdf20d80a0": {
+        "01a0ea27-a1bb-7611-bade-e847e0d87b29": {
           "canvases": [
             {
-              "id": "01a0e92f-2e93-7d31-94a2-89717d01f379",
+              "id": "01a0ea27-a1cc-7403-afd6-d7f35c62aaad",
               "kind": "database",
               "source_hash": "5c587aa5819695244ec8ab1148e4893d3b2be1b84424c955c8fe716bc70ea47a",
               "x": 620,
@@ -125,7 +125,7 @@
               "lifecycle_note": null,
               "settings": {},
               "content": {
-                "dataset_id": "01a0e92f-2e94-7170-a3ea-4277244d8ea3",
+                "dataset_id": "01a0ea27-a1cd-7dc1-9ef3-acfbdc04ba1c",
                 "shape": "table",
                 "source_kind": "csv",
                 "row_count": 3,
@@ -157,7 +157,7 @@
                 ],
                 "rows": [
                   {
-                    "id": "01a0e92f-2e94-7170-a3ea-42c6b25c393f",
+                    "id": "01a0ea27-a1cd-7dc1-9ef3-ad4f4776a6f9",
                     "seq": 0,
                     "cells": {
                       "c0": "Draft the outline",
@@ -167,7 +167,7 @@
                     }
                   },
                   {
-                    "id": "01a0e92f-2e94-7170-a3ea-42d6d5dc0871",
+                    "id": "01a0ea27-a1cd-7dc1-9ef3-ad5b887ed019",
                     "seq": 1,
                     "cells": {
                       "c0": "Collect sources",
@@ -177,7 +177,7 @@
                     }
                   },
                   {
-                    "id": "01a0e92f-2e94-7170-a3ea-42e371c49bf4",
+                    "id": "01a0ea27-a1cd-7dc1-9ef3-ad6c4e449dab",
                     "seq": 2,
                     "cells": {
                       "c0": "Review with the team",
@@ -190,7 +190,7 @@
               }
             },
             {
-              "id": "01a0e92f-2e9e-7b00-9027-fa0eec7ad7c3",
+              "id": "01a0ea27-a1d8-7972-9851-ee6a252ab5b8",
               "kind": "rich_text",
               "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
               "x": 40,
@@ -409,7 +409,7 @@
                         {
                           "type": "notebook_link",
                           "attrs": {
-                            "canvasId": "01a0e92f-2e93-7d31-94a2-89717d01f379",
+                            "canvasId": "01a0ea27-a1cc-7403-afd6-d7f35c62aaad",
                             "labelSnapshot": "Tasks",
                             "notebookId": "",
                             "notebookLabelSnapshot": ""
@@ -426,7 +426,7 @@
               }
             },
             {
-              "id": "01a0e92f-2ea8-7af2-8592-bc58b329c327",
+              "id": "01a0ea27-a1e2-7893-a1fc-0d665e4152e8",
               "kind": "sketch",
               "source_hash": "0b7e1105132b4dca5b3b88bdf5a8ba4e61e4c3e7928dbd87138bf2b5595d5883",
               "x": 40,
@@ -490,7 +490,7 @@
               }
             },
             {
-              "id": "01a0e92f-2eb4-7a40-95c9-77c160664f56",
+              "id": "01a0ea27-a1ed-7da2-b72a-c4729fbd06d4",
               "kind": "picture",
               "source_hash": "e4153f382e250ba2ca62ed705f7b962419e9083bf5a46a6d337e0427748bfe33",
               "x": 380,
@@ -499,7 +499,7 @@
               "height": 160,
               "z_index": 0,
               "z_minor": 3,
-              "group_id": "01a0e92f-2ebf-75a2-a123-8047b08117ac",
+              "group_id": "01a0ea27-a1f7-7d63-b0da-e584b5ecef31",
               "lifecycle": "active",
               "lifecycle_reason": null,
               "lifecycle_note": null,
@@ -533,7 +533,7 @@
               }
             },
             {
-              "id": "01a0e92f-2ebe-75e1-a70d-549ec1cfa04e",
+              "id": "01a0ea27-a1f5-74e2-8311-a390b42a47a9",
               "kind": "rich_text",
               "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
               "x": 380,
@@ -542,13 +542,13 @@
               "height": 40,
               "z_index": 0,
               "z_minor": 4,
-              "group_id": "01a0e92f-2ebf-75a2-a123-8047b08117ac",
+              "group_id": "01a0ea27-a1f7-7d63-b0da-e584b5ecef31",
               "lifecycle": "active",
               "lifecycle_reason": null,
               "lifecycle_note": null,
               "settings": {
                 "caption": {
-                  "anchor": "01a0e92f-2eb4-7a40-95c9-77c160664f56",
+                  "anchor": "01a0ea27-a1ed-7da2-b72a-c4729fbd06d4",
                   "placement": "bottom"
                 }
               },
@@ -573,7 +573,7 @@
               }
             },
             {
-              "id": "01a0e92f-2ec9-7a03-90bd-309fc999cb0c",
+              "id": "01a0ea27-a200-76c3-9167-6f0e869837a8",
               "kind": "spreadsheet",
               "source_hash": "31dab27d06645fa76fda6ff0d5f22a42387c0970bc458275242ee456e8184e24",
               "x": 620,
@@ -588,7 +588,7 @@
               "lifecycle_note": null,
               "settings": {},
               "content": {
-                "dataset_id": "01a0e92f-2eca-7202-b954-0cf96cd8af88",
+                "dataset_id": "01a0ea27-a200-76c3-9167-6f1b8718d970",
                 "shape": "table",
                 "source_kind": "paste",
                 "row_count": 3,
@@ -614,7 +614,7 @@
                 ],
                 "rows": [
                   {
-                    "id": "01a0e92f-2eca-7202-b954-0d350703038f",
+                    "id": "01a0ea27-a200-76c3-9167-6f50ae44dc8e",
                     "seq": 0,
                     "cells": {
                       "c0": "R1C1",
@@ -623,7 +623,7 @@
                     }
                   },
                   {
-                    "id": "01a0e92f-2eca-7202-b954-0d4c31ac3ac8",
+                    "id": "01a0ea27-a200-76c3-9167-6f6f2e15d708",
                     "seq": 1,
                     "cells": {
                       "c0": "R2C1",
@@ -632,7 +632,7 @@
                     }
                   },
                   {
-                    "id": "01a0e92f-2eca-7202-b954-0d587f6c0517",
+                    "id": "01a0ea27-a200-76c3-9167-6f76a00be87a",
                     "seq": 2,
                     "cells": {
                       "c0": "R3C1",
@@ -646,23 +646,23 @@
           ],
           "groups": [
             {
-              "id": "01a0e92f-2ebf-75a2-a123-8047b08117ac",
+              "id": "01a0ea27-a1f7-7d63-b0da-e584b5ecef31",
               "parent_group_id": null
             },
             {
-              "id": "01a0e92f-2ec0-7b20-bbaa-890dbefa502b",
-              "parent_group_id": "01a0e92f-2ebf-75a2-a123-8047b08117ac"
+              "id": "01a0ea27-a1f8-76b3-a0fe-f54bd8a7cdf9",
+              "parent_group_id": "01a0ea27-a1f7-7d63-b0da-e584b5ecef31"
             }
           ]
         },
-        "01a0e92f-2e85-7161-9925-73fbdb5e4b58": {
+        "01a0ea27-a1bd-7fd3-ac41-57689c548575": {
           "canvases": [],
           "groups": []
         },
-        "01a0e92f-2e86-7712-91ce-2224b2f5759c": {
+        "01a0ea27-a1bf-77d3-891a-4af946eeb371": {
           "canvases": [
             {
-              "id": "01a0e92f-2eda-7bb3-9939-7c29490cd03b",
+              "id": "01a0ea27-a213-70b1-b711-ed94a4bf2f96",
               "kind": "calendar",
               "source_hash": "a598b7358d54ca31f2742f6a9046e0448f7cd380c2a89b4d9fe080935cf42092",
               "x": 40,
@@ -679,7 +679,7 @@
               "content": {
                 "events": [
                   {
-                    "id": "01a0e92f-2edb-7413-a277-37675a57d803",
+                    "id": "01a0ea27-a214-7692-b9f0-0d29b4ed4304",
                     "uid": "golden-standup@example.invalid",
                     "summary": "Weekly stand-up",
                     "location": "Room 4",
@@ -687,10 +687,32 @@
                     "start_utc": 1767625200,
                     "end_utc": 1767627000,
                     "all_day": false,
-                    "tzid": "UTC"
+                    "tzid": "UTC",
+                    "source_ordinal": 0,
+                    "url": null,
+                    "organizer_value": "mailto:ada@example.invalid",
+                    "organizer_cn": "Ada Example",
+                    "status": "CONFIRMED",
+                    "categories": [
+                      "Team"
+                    ],
+                    "rrule_text": "FREQ=WEEKLY;COUNT=4",
+                    "attachments": [],
+                    "attendees": [
+                      {
+                        "value": "mailto:grace@example.invalid",
+                        "cn": "Grace Example",
+                        "role": "REQ-PARTICIPANT",
+                        "partstat": "ACCEPTED",
+                        "rsvp": true
+                      }
+                    ],
+                    "dtstamp_utc": null,
+                    "last_modified_utc": null,
+                    "sequence": null
                   },
                   {
-                    "id": "01a0e92f-2edb-7413-a277-37812686319b",
+                    "id": "01a0ea27-a214-7692-b9f0-0d4e87fe0dc4",
                     "uid": "golden-offsite@example.invalid",
                     "summary": "Planning offsite",
                     "location": "",
@@ -698,7 +720,19 @@
                     "start_utc": 1770854400,
                     "end_utc": 1770940800,
                     "all_day": true,
-                    "tzid": null
+                    "tzid": null,
+                    "source_ordinal": 1,
+                    "url": null,
+                    "organizer_value": null,
+                    "organizer_cn": null,
+                    "status": null,
+                    "categories": [],
+                    "rrule_text": null,
+                    "attachments": [],
+                    "attendees": [],
+                    "dtstamp_utc": null,
+                    "last_modified_utc": null,
+                    "sequence": null
                   }
                 ]
               }
@@ -716,7 +750,7 @@
         {
           "depth": 0,
           "kind": "notebook",
-          "id": "01a0e92f-2f35-72a0-b89d-055e624eb746",
+          "id": "01a0ea27-a279-7ce0-bba6-46c2cfc48f87",
           "name": "Forms",
           "is_template": false,
           "is_archived": false,
@@ -725,7 +759,7 @@
         {
           "depth": 1,
           "kind": "group",
-          "id": "01a0e92f-2f36-7350-bc66-91025cf115e0",
+          "id": "01a0ea27-a27a-7743-b303-a7312297c7d9",
           "name": "Intake",
           "is_template": false,
           "is_archived": false,
@@ -734,28 +768,28 @@
         {
           "depth": 2,
           "kind": "page",
-          "id": "01a0e92f-2f36-7350-bc66-911e564d5ae1",
+          "id": "01a0ea27-a27b-7e93-a91f-5cbe471f4a6e",
           "name": "Sign-up form",
           "is_template": false,
           "is_archived": false,
           "settings": {
             "formTabOrder": [
-              "01a0e92f-2f44-7503-976f-e5f1aa195201",
-              "01a0e92f-2f4f-76f2-b95d-78515def96e2",
-              "01a0e92f-2f5a-7ab0-83b0-0cf08deacc53"
+              "01a0ea27-a28e-7671-868b-7bd55a1ed360",
+              "01a0ea27-a29b-73c1-9546-ad9688d1f33c",
+              "01a0ea27-a2a7-7a43-bca8-f66f9a4a3e90"
             ],
             "formDestination": {
               "kind": "canvas",
-              "id": "01a0e92f-2f64-7f83-be7b-d5d1d27bd02b"
+              "id": "01a0ea27-a2b1-7162-a093-def8d26e4295"
             }
           }
         }
       ],
       "pages": {
-        "01a0e92f-2f36-7350-bc66-911e564d5ae1": {
+        "01a0ea27-a27b-7e93-a91f-5cbe471f4a6e": {
           "canvases": [
             {
-              "id": "01a0e92f-2f44-7503-976f-e5f1aa195201",
+              "id": "01a0ea27-a28e-7671-868b-7bd55a1ed360",
               "kind": "rich_text",
               "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
               "x": 40,
@@ -795,7 +829,7 @@
               }
             },
             {
-              "id": "01a0e92f-2f4f-76f2-b95d-78515def96e2",
+              "id": "01a0ea27-a29b-73c1-9546-ad9688d1f33c",
               "kind": "rich_text",
               "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
               "x": 40,
@@ -835,7 +869,7 @@
               }
             },
             {
-              "id": "01a0e92f-2f5a-7ab0-83b0-0cf08deacc53",
+              "id": "01a0ea27-a2a7-7a43-bca8-f66f9a4a3e90",
               "kind": "sketch",
               "source_hash": "0b7e1105132b4dca5b3b88bdf5a8ba4e61e4c3e7928dbd87138bf2b5595d5883",
               "x": 40,
@@ -885,7 +919,7 @@
               }
             },
             {
-              "id": "01a0e92f-2f64-7f83-be7b-d5d1d27bd02b",
+              "id": "01a0ea27-a2b1-7162-a093-def8d26e4295",
               "kind": "spreadsheet",
               "source_hash": "31dab27d06645fa76fda6ff0d5f22a42387c0970bc458275242ee456e8184e24",
               "x": 420,
@@ -904,7 +938,7 @@
                 }
               },
               "content": {
-                "dataset_id": "01a0e92f-2f65-7c53-8050-d7b603131133",
+                "dataset_id": "01a0ea27-a2b1-7162-a093-df07185f949f",
                 "shape": "table",
                 "source_kind": "csv",
                 "row_count": 1,
@@ -936,12 +970,12 @@
                 ],
                 "rows": [
                   {
-                    "id": "01a0e92f-2f73-7211-8d18-8194e6a4b199",
+                    "id": "01a0ea27-a2c0-7a51-8b4e-cb1ec19d32da",
                     "seq": 0,
                     "cells": {
                       "c0": "Ada Example",
                       "c1": "Research",
-                      "c2": "sketch:01a0e92f-2f72-7d91-8ec0-9097b1d41380",
+                      "c2": "sketch:01a0ea27-a2bf-7942-afb6-6b67d430ca92",
                       "c3": "2026-01-05T09:30:00+00:00"
                     }
                   }
@@ -949,7 +983,7 @@
               }
             },
             {
-              "id": "01a0e92f-2f72-7d91-8ec0-9097b1d41380",
+              "id": "01a0ea27-a2bf-7942-afb6-6b67d430ca92",
               "kind": "sketch",
               "source_hash": "0b7e1105132b4dca5b3b88bdf5a8ba4e61e4c3e7928dbd87138bf2b5595d5883",
               "x": 40,
@@ -1009,7 +1043,7 @@
         {
           "depth": 0,
           "kind": "notebook",
-          "id": "01a0e92f-2fcd-7d63-a60d-3b892df48b00",
+          "id": "01a0ea27-a321-7642-8be1-3b7c951604a4",
           "name": "Templates",
           "is_template": false,
           "is_archived": false,
@@ -1018,7 +1052,7 @@
         {
           "depth": 1,
           "kind": "group",
-          "id": "01a0e92f-2fce-7423-bb36-efdc60bed1d4",
+          "id": "01a0ea27-a322-7892-8655-d727ce358934",
           "name": "Meetings",
           "is_template": false,
           "is_archived": false,
@@ -1027,7 +1061,7 @@
         {
           "depth": 2,
           "kind": "page",
-          "id": "01a0e92f-2fce-7423-bb36-efe1e9253097",
+          "id": "01a0ea27-a324-75a3-9980-0563e7b6b501",
           "name": "Meeting notes",
           "is_template": false,
           "is_archived": false,
@@ -1036,7 +1070,7 @@
         {
           "depth": 2,
           "kind": "page",
-          "id": "01a0e92f-3000-7370-82ba-ad81ebbd3b53",
+          "id": "01a0ea27-a35a-73e3-a7fc-94c8faca77b7",
           "name": "Meeting notes (template)",
           "is_template": true,
           "is_archived": false,
@@ -1045,7 +1079,7 @@
         {
           "depth": 2,
           "kind": "page",
-          "id": "01a0e92f-3002-7502-b159-0b0e6e50afde",
+          "id": "01a0ea27-a35c-7f40-9b5a-7509c567d852",
           "name": "Meeting notes",
           "is_template": false,
           "is_archived": false,
@@ -1053,10 +1087,10 @@
         }
       ],
       "pages": {
-        "01a0e92f-2fce-7423-bb36-efe1e9253097": {
+        "01a0ea27-a324-75a3-9980-0563e7b6b501": {
           "canvases": [
             {
-              "id": "01a0e92f-2fdf-7cb2-963e-b88252bc15e8",
+              "id": "01a0ea27-a335-7133-896e-255ecc0b188a",
               "kind": "rich_text",
               "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
               "x": 40,
@@ -1106,7 +1140,7 @@
               }
             },
             {
-              "id": "01a0e92f-2fea-7371-abdb-da536a9739d8",
+              "id": "01a0ea27-a342-77a1-ad13-297180ab0694",
               "kind": "rich_text",
               "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
               "x": 40,
@@ -1141,7 +1175,7 @@
               }
             },
             {
-              "id": "01a0e92f-2ff5-7522-a361-1926ee38f0c6",
+              "id": "01a0ea27-a34e-7873-9777-d96b5cc23ec6",
               "kind": "picture",
               "source_hash": "e4153f382e250ba2ca62ed705f7b962419e9083bf5a46a6d337e0427748bfe33",
               "x": 560,
@@ -1164,10 +1198,10 @@
           ],
           "groups": []
         },
-        "01a0e92f-3000-7370-82ba-ad81ebbd3b53": {
+        "01a0ea27-a35a-73e3-a7fc-94c8faca77b7": {
           "canvases": [
             {
-              "id": "01a0e92f-3000-7370-82ba-ad9fa8e3cae9",
+              "id": "01a0ea27-a35b-74a3-8084-2db44315bb75",
               "kind": "rich_text",
               "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
               "x": 40,
@@ -1217,7 +1251,7 @@
               }
             },
             {
-              "id": "01a0e92f-3001-7580-a45a-4167c1f5f640",
+              "id": "01a0ea27-a35b-74a3-8084-2dc8f8c4e9bb",
               "kind": "rich_text",
               "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
               "x": 40,
@@ -1243,7 +1277,7 @@
               }
             },
             {
-              "id": "01a0e92f-3001-7580-a45a-417d0fa57f16",
+              "id": "01a0ea27-a35b-74a3-8084-2dd2f6ff3d65",
               "kind": "picture",
               "source_hash": "f999f31fe5e877e891b7f85f4d26559818b8f3f01604900ed6073b9e284eaac4",
               "x": 560,
@@ -1266,10 +1300,10 @@
           ],
           "groups": []
         },
-        "01a0e92f-3002-7502-b159-0b0e6e50afde": {
+        "01a0ea27-a35c-7f40-9b5a-7509c567d852": {
           "canvases": [
             {
-              "id": "01a0e92f-3002-7502-b159-0b135fdc5b7e",
+              "id": "01a0ea27-a35c-7f40-9b5a-7513cb034900",
               "kind": "rich_text",
               "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
               "x": 40,
@@ -1319,7 +1353,7 @@
               }
             },
             {
-              "id": "01a0e92f-3002-7502-b159-0b294cb9a228",
+              "id": "01a0ea27-a35d-7ea2-9df5-3cd2e11aece1",
               "kind": "rich_text",
               "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
               "x": 40,
@@ -1345,7 +1379,7 @@
               }
             },
             {
-              "id": "01a0e92f-3002-7502-b159-0b3842da3145",
+              "id": "01a0ea27-a35d-7ea2-9df5-3ce66ce9026c",
               "kind": "picture",
               "source_hash": "f999f31fe5e877e891b7f85f4d26559818b8f3f01604900ed6073b9e284eaac4",
               "x": 560,
@@ -1378,7 +1412,7 @@
         {
           "depth": 0,
           "kind": "notebook",
-          "id": "01a0e92f-3059-7143-90ad-5446584d5462",
+          "id": "01a0ea27-a3bb-7fa3-b39f-c401543cb34c",
           "name": "Archive",
           "is_template": false,
           "is_archived": false,
@@ -1387,7 +1421,7 @@
         {
           "depth": 1,
           "kind": "group",
-          "id": "01a0e92f-305a-7b60-bf38-acb0fcdd6cc3",
+          "id": "01a0ea27-a3bc-7620-9d1c-8179c98f98ac",
           "name": "Drafts",
           "is_template": false,
           "is_archived": false,
@@ -1396,7 +1430,7 @@
         {
           "depth": 2,
           "kind": "page",
-          "id": "01a0e92f-305b-7063-986d-6cf1f9b7666e",
+          "id": "01a0ea27-a3bc-7620-9d1c-818fa46b6d81",
           "name": "First draft",
           "is_template": false,
           "is_archived": true,
@@ -1405,7 +1439,7 @@
         {
           "depth": 2,
           "kind": "page",
-          "id": "01a0e92f-306b-7da0-9dfa-4cdfbe4d151c",
+          "id": "01a0ea27-a3cd-7f11-aa16-67fec0bd1e9a",
           "name": "Second draft",
           "is_template": false,
           "is_archived": false,
@@ -1413,10 +1447,10 @@
         }
       ],
       "pages": {
-        "01a0e92f-305b-7063-986d-6cf1f9b7666e": {
+        "01a0ea27-a3bc-7620-9d1c-818fa46b6d81": {
           "canvases": [
             {
-              "id": "01a0e92f-306a-7022-bdf4-f431743bb38d",
+              "id": "01a0ea27-a3cb-7be0-888b-6518906128ea",
               "kind": "rich_text",
               "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
               "x": 40,
@@ -1453,10 +1487,10 @@
           ],
           "groups": []
         },
-        "01a0e92f-306b-7da0-9dfa-4cdfbe4d151c": {
+        "01a0ea27-a3cd-7f11-aa16-67fec0bd1e9a": {
           "canvases": [
             {
-              "id": "01a0e92f-3077-7e83-ab4b-13182b5a7c49",
+              "id": "01a0ea27-a3d7-7ee3-a351-f912a48d195d",
               "kind": "rich_text",
               "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
               "x": 40,
@@ -1491,7 +1525,7 @@
               }
             },
             {
-              "id": "01a0e92f-3081-7022-b137-d7b927b1990c",
+              "id": "01a0ea27-a3e1-7ba1-84c6-7cc3e8c8a8cf",
               "kind": "rich_text",
               "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
               "x": 40,
@@ -1538,7 +1572,7 @@
         {
           "depth": 0,
           "kind": "notebook",
-          "id": "01a0e92f-30e0-7ac1-b526-6ab0cd7b1154",
+          "id": "01a0ea27-a43f-7853-8a21-8afb9324850f",
           "name": "Tags",
           "is_template": false,
           "is_archived": false,
@@ -1547,7 +1581,7 @@
         {
           "depth": 1,
           "kind": "group",
-          "id": "01a0e92f-30e1-7c73-93b2-c41ef9af326c",
+          "id": "01a0ea27-a440-7262-a0fd-68f207ebf10e",
           "name": "Field notes",
           "is_template": false,
           "is_archived": false,
@@ -1556,7 +1590,7 @@
         {
           "depth": 2,
           "kind": "page",
-          "id": "01a0e92f-30e2-7b82-9fe1-18961e750ed5",
+          "id": "01a0ea27-a441-7981-a971-a4f0ae911159",
           "name": "Site visit",
           "is_template": false,
           "is_archived": false,
@@ -1564,10 +1598,10 @@
         }
       ],
       "pages": {
-        "01a0e92f-30e2-7b82-9fe1-18961e750ed5": {
+        "01a0ea27-a441-7981-a971-a4f0ae911159": {
           "canvases": [
             {
-              "id": "01a0e92f-30f2-7e00-a607-4a61503d78bc",
+              "id": "01a0ea27-a44d-74f3-9d70-0092966020a0",
               "kind": "rich_text",
               "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
               "x": 40,
@@ -1602,7 +1636,7 @@
               }
             },
             {
-              "id": "01a0e92f-30fd-7a50-88d1-e4d146c2cfd2",
+              "id": "01a0ea27-a459-7e00-a340-20d75e657318",
               "kind": "picture",
               "source_hash": "e4153f382e250ba2ca62ed705f7b962419e9083bf5a46a6d337e0427748bfe33",
               "x": 480,
@@ -1621,7 +1655,7 @@
               }
             },
             {
-              "id": "01a0e92f-3107-7fd1-a731-36b8109b8bae",
+              "id": "01a0ea27-a463-73f3-82c8-bf14d34ec8ca",
               "kind": "database",
               "source_hash": "5c587aa5819695244ec8ab1148e4893d3b2be1b84424c955c8fe716bc70ea47a",
               "x": 40,
@@ -1636,7 +1670,7 @@
               "lifecycle_note": null,
               "settings": {},
               "content": {
-                "dataset_id": "01a0e92f-3108-7d42-9c51-567c98b3ba65",
+                "dataset_id": "01a0ea27-a464-7c91-b99d-eccba611976d",
                 "shape": "table",
                 "source_kind": "csv",
                 "row_count": 3,
@@ -1668,7 +1702,7 @@
                 ],
                 "rows": [
                   {
-                    "id": "01a0e92f-3108-7d42-9c51-56cbcdf94671",
+                    "id": "01a0ea27-a464-7c91-b99d-ed13db88f88a",
                     "seq": 0,
                     "cells": {
                       "c0": "Draft the outline",
@@ -1678,7 +1712,7 @@
                     }
                   },
                   {
-                    "id": "01a0e92f-3108-7d42-9c51-56d9d8ce4348",
+                    "id": "01a0ea27-a464-7c91-b99d-ed23ca53f2f9",
                     "seq": 1,
                     "cells": {
                       "c0": "Collect sources",
@@ -1688,7 +1722,7 @@
                     }
                   },
                   {
-                    "id": "01a0e92f-3108-7d42-9c51-56eab012b0f0",
+                    "id": "01a0ea27-a464-7c91-b99d-ed30ab20002e",
                     "seq": 2,
                     "cells": {
                       "c0": "Review with the team",
@@ -1706,7 +1740,7 @@
       },
       "tags": [
         {
-          "id": "01a0e92f-310a-7880-8314-154e85926b75",
+          "id": "01a0ea27-a466-72c1-849c-0437110a1359",
           "name": "Café",
           "name_folded": "cafe",
           "aliases": [
@@ -1714,7 +1748,7 @@
           ]
         },
         {
-          "id": "01a0e92f-310a-7880-8314-1524d8fa160d",
+          "id": "01a0ea27-a466-72c1-849c-0412d55b86eb",
           "name": "Project Alpha",
           "name_folded": "project alpha",
           "aliases": [
@@ -1722,7 +1756,7 @@
           ]
         },
         {
-          "id": "01a0e92f-310b-7363-b051-aedd3f7024a6",
+          "id": "01a0ea27-a466-72c1-849c-0455dc4ebca7",
           "name": "Urgent",
           "name_folded": "urgent",
           "aliases": []
@@ -1731,35 +1765,35 @@
       "item_tags": [
         {
           "source_kind": "node",
-          "source_id": "01a0e92f-30e2-7b82-9fe1-18961e750ed5",
+          "source_id": "01a0ea27-a441-7981-a971-a4f0ae911159",
           "tags": [
             "Project Alpha"
           ]
         },
         {
           "source_kind": "instance",
-          "source_id": "01a0e92f-30f2-7e00-a607-4a61503d78bc",
+          "source_id": "01a0ea27-a44d-74f3-9d70-0092966020a0",
           "tags": [
             "Café"
           ]
         },
         {
           "source_kind": "instance",
-          "source_id": "01a0e92f-30fd-7a50-88d1-e4d146c2cfd2",
+          "source_id": "01a0ea27-a459-7e00-a340-20d75e657318",
           "tags": [
             "Project Alpha"
           ]
         },
         {
           "source_kind": "dataset",
-          "source_id": "01a0e92f-3108-7d42-9c51-567c98b3ba65",
+          "source_id": "01a0ea27-a464-7c91-b99d-eccba611976d",
           "tags": [
             "Urgent"
           ]
         },
         {
           "source_kind": "dataset_row",
-          "source_id": "01a0e92f-3108-7d42-9c51-56cbcdf94671",
+          "source_id": "01a0ea27-a464-7c91-b99d-ed13db88f88a",
           "tags": [
             "Urgent"
           ]
@@ -1768,7 +1802,7 @@
       "meta": [
         {
           "source_kind": "node",
-          "source_id": "01a0e92f-30e2-7b82-9fe1-18961e750ed5",
+          "source_id": "01a0ea27-a441-7981-a971-a4f0ae911159",
           "key": "vendor",
           "value_text": "Example Surveys",
           "value_num": null,
@@ -1777,7 +1811,7 @@
         },
         {
           "source_kind": "instance",
-          "source_id": "01a0e92f-30fd-7a50-88d1-e4d146c2cfd2",
+          "source_id": "01a0ea27-a459-7e00-a340-20d75e657318",
           "key": "capture_time",
           "value_text": "2026-01-05T08:00:00Z",
           "value_num": 1767600000.0,
@@ -1786,7 +1820,7 @@
         },
         {
           "source_kind": "instance",
-          "source_id": "01a0e92f-30fd-7a50-88d1-e4d146c2cfd2",
+          "source_id": "01a0ea27-a459-7e00-a340-20d75e657318",
           "key": "geo",
           "value_text": null,
           "value_num": 51.5007,
@@ -1795,7 +1829,7 @@
         },
         {
           "source_kind": "instance",
-          "source_id": "01a0e92f-30fd-7a50-88d1-e4d146c2cfd2",
+          "source_id": "01a0ea27-a459-7e00-a340-20d75e657318",
           "key": "place",
           "value_text": "Westminster",
           "value_num": null,

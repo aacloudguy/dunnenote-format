@@ -537,6 +537,95 @@ pub fn archive_tags(root: &Path) -> Result<()> {
     nb.write(|w| w.retrieve_node(&first))
 }
 
+/// Calendars: the edge-case `.ics` (zoned, all-day, floating, attendees, attachments, skipped
+/// events), a calendar used as a form field, and the page made into a template.
+pub fn calendars(root: &Path) -> Result<()> {
+    let mut nb = Notebook::create(root, Some("Written Calendars"))?;
+    let nb_id = nb.notebook_node()?.id;
+    nb.write(|w| {
+        let section = w.add_section(&nb_id, "Diary", At::End)?;
+        let page = w.add_page(&section, "January", At::End)?;
+        let (cal, skipped) = w.add_calendar(
+            &page,
+            Frame::new(40, 40, 480, 360),
+            CALENDAR_ICS.as_bytes(),
+            &settings(json!({"scale": "week", "layoutMode": "standard"})),
+        )?;
+        assert_eq!(skipped, 2);
+        let (form, _) = w.add_form(&section, "Booking", At::End)?;
+        let (day, _) = w.add_calendar(
+            &form,
+            Frame::new(560, 40, 320, 240),
+            CALENDAR_ICS.as_bytes(),
+            &settings(json!({"displayDayEpoch": 1_767_571_200})),
+        )?;
+        w.set_form_field(&day, Some(&FormField::new("Day")))?;
+        w.submit_form(
+            &form,
+            &Submission {
+                submitted: Some("2026-01-05T09:30:00+00:00".into()),
+                ..Submission::default()
+            },
+        )?;
+        let _ = cal;
+        w.make_template(&page)?;
+        Ok(())
+    })
+}
+
+/// An iCalendar file exercising what the import reads (and skips).
+pub const CALENDAR_ICS: &str = "BEGIN:VCALENDAR\r
+VERSION:2.0\r
+PRODID:-//dunnenote-format//written//EN\r
+BEGIN:VTIMEZONE\r
+TZID:W. Europe Standard Time\r
+END:VTIMEZONE\r
+BEGIN:VEVENT\r
+UID:zoned@example.invalid\r
+SUMMARY:Planning (zoned)\r
+LOCATION:Room 2\r
+DESCRIPTION:Agenda\\nand notes\r
+DTSTART;TZID=W. Europe Standard Time:20260105T090000\r
+DURATION:PT1H30M\r
+ORGANIZER;CN=Ada Example:mailto:ada@example.invalid\r
+ATTENDEE;CN=Grace;ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;RSVP=TRUE:mailto:grace@example.invalid\r
+ATTENDEE:mailto:bob@example.invalid\r
+CATEGORIES:Work,Team\r
+STATUS:CONFIRMED\r
+URL:https://example.invalid/m\r
+RRULE:FREQ=WEEKLY;COUNT=4\r
+ATTACH;FMTTYPE=application/pdf;FILENAME=agenda.pdf:https://example.invalid/a.pdf\r
+ATTACH;VALUE=BINARY;ENCODING=BASE64;X-FILENAME=inline.txt:aGVsbG8=\r
+DTSTAMP:20260101T120000Z\r
+LAST-MODIFIED:20260102T120000\r
+SEQUENCE:3\r
+END:VEVENT\r
+BEGIN:VEVENT\r
+UID:backwards@example.invalid\r
+DTSTART:20260105T100000Z\r
+DTEND:20260105T090000Z\r
+END:VEVENT\r
+BEGIN:VEVENT\r
+SUMMARY:Holiday\r
+DTSTART;VALUE=DATE:20260107\r
+END:VEVENT\r
+BEGIN:VEVENT\r
+UID:utc@example.invalid\r
+SUMMARY:Call\r
+DTSTART:20260108T101500Z\r
+DTEND:20260108T104500Z\r
+END:VEVENT\r
+BEGIN:VEVENT\r
+UID:floating@example.invalid\r
+SUMMARY:Reminder\r
+DTSTART:20260109T080000\r
+END:VEVENT\r
+BEGIN:VEVENT\r
+SUMMARY:No start\r
+END:VEVENT\r
+END:VCALENDAR\r
+";
+
 pub const TABLE_CSV: &str = "Task;Owner;Hours;Done;Due;Blank\n\
     Survey;Ada;3;TRUE;2026-01-05;\n\
     Report;;5.5;false;2026-01-06T09:30;\n\
@@ -577,6 +666,7 @@ pub fn build_all(out: &Path) -> Result<Vec<(&'static str, PathBuf)>> {
         ("written-forms", forms),
         ("written-templates", templates),
         ("written-archive-tags", archive_tags),
+        ("written-calendars", calendars),
     ] {
         let root = out.join(format!("{name}.dunnenote"));
         build(&root)?;

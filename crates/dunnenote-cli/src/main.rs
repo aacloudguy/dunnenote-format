@@ -49,6 +49,7 @@ USAGE:
     dnfmt add-canvas <notebook> <page-id> table [<file.csv>|<file.json>]
                                            An empty Editable table, or a Data
                                            Table imported from a file
+    dnfmt add-canvas <notebook> <page-id> calendar <file.ics>
         canvas options: [--at=<x>,<y>] [--size=<width>,<height>]
     dnfmt table <notebook> <table-id> add-row [<column>=<value>…]
     dnfmt table <notebook> <table-id> set <row-id> <column> <value>

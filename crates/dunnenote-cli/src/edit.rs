@@ -4,7 +4,7 @@
 use dunnenote_format::settings_keys::{FormField, LabelDisplay, Placement};
 use dunnenote_format::{
     ingest, payload, ArchiveReason, At, CanvasKind, Error, Frame, MetaValue, NodeKind, Notebook,
-    Settings, Stroke, Submission, TABLE_SIZE,
+    Settings, Stroke, Submission, CALENDAR_SIZE, TABLE_SIZE,
 };
 use serde_json::{Map, Value};
 
@@ -175,9 +175,21 @@ pub fn add_canvas(
                 }
             }
         }
+        "calendar" => {
+            let file = file.ok_or_else(|| bad_input("add-canvas calendar needs an .ics file"))?;
+            let ics = std::fs::read(file)?;
+            let (w, h) = CALENDAR_SIZE;
+            let frame = frame(w, h);
+            let (id, skipped) =
+                nb.write(|w| w.add_calendar(page, frame, &ics, &Settings::new()))?;
+            if skipped > 0 {
+                eprintln!("{skipped} events could not be read and were left out");
+            }
+            id
+        }
         other => {
             return Err(bad_input(format!(
-                "unknown canvas kind {other:?}; use rich-text, sketch, picture or table"
+                "unknown canvas kind {other:?}; use rich-text, sketch, picture, table or calendar"
             )))
         }
     };

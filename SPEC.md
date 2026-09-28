@@ -14,7 +14,7 @@ The key words MUST, MUST NOT, SHOULD and MAY are to be interpreted as described 
 6. Blobs: addressing, sentinel blobs, reference counts — [below](#6-blobs)
 7. Canvases: settings merge rule and reserved settings keys — [below](#7-canvas-and-page-settings)
 8. Payloads: rich text and sketch [below](#8-payloads-rich-text-and-sketch); tables
-   [below](#tables); calendar, per-kind settings *(to be written)*
+   [below](#tables); calendars [below](#calendars)
 9. Roles: captions, forms and templates — [below](#9-roles-captions-forms-and-templates)
 10. Groups, layering, archive — [below](#10-groups-layering-archive)
 11. Tags and metadata, fold v1 — [below](#11-tags-and-metadata-fold-v1)
@@ -163,6 +163,52 @@ A table canvas is either a **Data Table** (`kind = 'database'`) or an **Editable
 - **Typed cells.** Text typed into an Editable table cell is stored as a number when, trimmed, it
   matches `-?[0-9]+(\.[0-9]+)?` (written as JavaScript writes numbers: `7`, not `7.0`), as `""`
   when blank, and otherwise as the text exactly as typed.
+
+### Calendars
+
+A Calendar canvas (`kind = 'calendar'`) points at the imported `.ics` file itself as its source
+blob; its events are rows of `calendar_events` (with `calendar_event_attendees`), derived from
+that file once, when it is imported, and never re-derived. Deleting the canvas deletes them.
+
+- **Accepting a file.** At most 5 MiB and not empty; its first 4 KiB MUST start (after an
+  optional UTF-8 byte-order mark and whitespace) with `BEGIN:VCALENDAR` in any case; and it MUST
+  parse as iCalendar. (DunneNote's parser then refuses a file with a byte-order mark or leading
+  whitespace, so in practice the file starts with `BEGIN:VCALENDAR`.) The blob is stored only
+  after the file parses.
+- **Events.** Every `VEVENT` is one row, in file order; other components are ignored.
+  `source_ordinal` is the event's position among the file's `VEVENT`s, counting ones that are
+  skipped. An event is skipped when it has no readable `DTSTART`, when its end is before its start,
+  or past 10 000 events.
+- **Times** are anchored without applying any time zone; `VTIMEZONE` is not read:
+
+  | `DTSTART` | `start_utc` | `all_day` | `tzid` |
+  | --- | --- | --- | --- |
+  | a date | 00:00 UTC that day | 1 | NULL |
+  | a UTC time (`…Z`) | that instant | 0 | `UTC` |
+  | a floating time | the wall-clock time read as UTC | 0 | NULL |
+  | `TZID=<zone>` | the wall-clock time read as UTC | 0 | the zone, verbatim |
+
+  `end_utc` comes from `DTEND` (same rules), else `start_utc` plus `DURATION`
+  (`[+-]P<n>W` or `[+-]P[<n>D][T[<n>H][<n>M][<n>S]]`), else one day for an all-day event and zero
+  for a timed one. `dtstamp_utc` and `last_modified_utc` are read the same way (zoned and floating
+  values as UTC).
+- **Text.** `summary`, `location` and `description` are `''` when absent (at most 1024, 1024 and
+  16 384 characters); `uid` is NULL when absent (512). `url`, `status` and `rrule_text` are
+  trimmed and NULL when empty (2048, 64, 1024). Recurrences are **not expanded**: the event is
+  stored once with its `RRULE` text. `organizer_value` is the `ORGANIZER` value and
+  `organizer_cn` its `CN` parameter (512 each). `sequence_no` is `SEQUENCE` as an integer.
+- **`categories`** is a JSON array of strings — every `CATEGORIES` property split on commas,
+  trimmed, blanks dropped, at most 64 of at most 256 characters — or NULL when there are none.
+- **`attachments`** is a JSON array of `{"filename","fmttype","uri"}` (in that order, `null` when
+  absent; `filename` from `FILENAME`, else `X-FILENAME`), at most 64, or NULL when there are none.
+  An inline attachment (`VALUE=BINARY` or `ENCODING=BASE64`) keeps no `uri`: its body is dropped.
+- **Attendees:** at most 512 per event, in file order (`ordinal` 0, 1, …): `value` trimmed,
+  `cn`, `role` and `partstat` from those parameters (NULL when absent), `rsvp` 1 only when
+  `RSVP=TRUE` (any case).
+- **Settings.** A calendar starts with settings `{}`. DunneNote keeps its view in
+  `displayDayEpoch` (the shown day's local midnight, Unix seconds), `scale` (`day`, `week`,
+  `month`, `event`), `layoutMode` (`standard`, `layered`), `displayMinuteOfDay` (0–1439) and
+  `displayEventId`.
 
 ## 9. Roles: captions, forms and templates
 

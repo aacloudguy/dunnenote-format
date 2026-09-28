@@ -422,7 +422,8 @@ impl Notebook {
             .prepare(
                 "SELECT id, instance_id, uid, summary, location, description, start_utc, end_utc, \
                  all_day, tzid, source_ordinal, url, organizer_value, organizer_cn, status, \
-                 categories, rrule_text FROM calendar_events WHERE instance_id = ?1 \
+                 categories, rrule_text, attachments, dtstamp_utc, last_modified_utc, sequence_no \
+                 FROM calendar_events WHERE instance_id = ?1 \
                  ORDER BY start_utc, source_ordinal, id",
             )?
             .query_map([canvas_id], |r| {
@@ -444,6 +445,10 @@ impl Notebook {
                     status: r.get(14)?,
                     categories: r.get(15)?,
                     rrule_text: r.get(16)?,
+                    attachments: r.get(17)?,
+                    dtstamp_utc: r.get(18)?,
+                    last_modified_utc: r.get(19)?,
+                    sequence: r.get(20)?,
                     attendees: Vec::new(),
                 })
             })?

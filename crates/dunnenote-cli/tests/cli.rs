@@ -379,3 +379,49 @@ fn templates_archive_tags_and_metadata_from_the_command_line() {
     assert_eq!(meta.len(), 2);
     assert_eq!(read.canvas(&text).unwrap().lifecycle, "active");
 }
+
+#[test]
+fn calendars_from_the_command_line() {
+    let dir = TempDir::new().unwrap();
+    let nb_path = dir.path().join("Diary.dunnenote");
+    let nb = nb_path.to_str().unwrap();
+    let ics = dir.path().join("jan.ics");
+    std::fs::write(
+        &ics,
+        "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:a\r\nSUMMARY:Call\r\nDTSTART:20260108T101500Z\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nSUMMARY:No start\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    )
+    .unwrap();
+    id(&["new", nb], None);
+    let page = id(&["add-page", nb, "root", "January", "--no-text"], None);
+    let out = dnfmt(
+        &["add-canvas", nb, &page, "calendar", ics.to_str().unwrap()],
+        None,
+    );
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert!(String::from_utf8_lossy(&out.stderr).contains("1 events could not be read"));
+    let cal = String::from_utf8(out.stdout).unwrap().trim().to_string();
+    let bad = dir.path().join("bad.ics");
+    std::fs::write(&bad, "not a calendar").unwrap();
+    assert!(!dnfmt(
+        &["add-canvas", nb, &page, "calendar", bad.to_str().unwrap()],
+        None
+    )
+    .status
+    .success());
+
+    let verify = dnfmt(&["verify", nb, "--full", "--strict"], None);
+    assert!(
+        verify.status.success(),
+        "{}",
+        String::from_utf8_lossy(&verify.stdout)
+    );
+    let read = Notebook::open(&nb_path).unwrap();
+    let events = read.calendar_events(&cal).unwrap();
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0].summary, "Call");
+    assert_eq!(events[0].source_ordinal, Some(0));
+}

@@ -260,8 +260,16 @@ pub struct CalendarEvent {
     pub organizer_value: Option<String>,
     pub organizer_cn: Option<String>,
     pub status: Option<String>,
+    /// A JSON array of strings, or `None` when there are none.
     pub categories: Option<String>,
+    /// The recurrence rule as written; recurrences are not expanded.
     pub rrule_text: Option<String>,
+    /// A JSON array of `{"filename", "fmttype", "uri"}`, or `None` when there are none.
+    pub attachments: Option<String>,
+    pub dtstamp_utc: Option<i64>,
+    pub last_modified_utc: Option<i64>,
+    /// The event's `SEQUENCE`.
+    pub sequence: Option<i64>,
     pub attendees: Vec<Attendee>,
 }
 
