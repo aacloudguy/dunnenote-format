@@ -1,18 +1,374 @@
-//! `dnfmt` — inspect, verify, export and edit DunneNote notebooks.
+//! `dnfmt` — inspect, verify and read DunneNote notebooks without DunneNote.
 
-fn main() {
-    let arg = std::env::args().nth(1);
-    match arg.as_deref() {
-        Some("--version") | Some("-V") => println!(
-            "dnfmt {} (DunneNote Format {}, schema {})",
-            env!("CARGO_PKG_VERSION"),
-            dunnenote_format::FORMAT_VERSION,
-            dunnenote_format::SCHEMA_VERSION
-        ),
-        _ => {
-            eprintln!("dnfmt: pre-release. Commands arrive in later milestones.");
-            eprintln!("usage: dnfmt --version");
-            std::process::exit(2);
+use std::process::ExitCode;
+
+use dunnenote_format::{
+    text::plain_text, verify, CanvasKind, Error, Node, NodeKind, Notebook, Severity, VerifyLevel,
+    FORMAT_VERSION, SCHEMA_VERSION,
+};
+use serde_json::json;
+
+const USAGE: &str = "\
+dnfmt — read and check DunneNote notebooks (.dunnenote)
+
+USAGE:
+    dnfmt inspect <notebook> [--json]      What the notebook is and what it holds
+    dnfmt ls <notebook> [--json]           The section and page tree, with ids
+    dnfmt cat <notebook> <id>              A page or canvas as text
+    dnfmt verify <notebook> [--full] [--json] [--strict]
+                                           Check for damage (exit 1 on errors;
+                                           --strict also fails on warnings)
+    dnfmt --version
+
+Notebooks are opened read-only; dnfmt never changes them.";
+
+struct Args {
+    positional: Vec<String>,
+    flags: Vec<String>,
+}
+
+impl Args {
+    fn parse() -> Self {
+        let (flags, positional) = std::env::args().skip(1).partition(|a| a.starts_with("--"));
+        Self { positional, flags }
+    }
+    fn flag(&self, name: &str) -> bool {
+        self.flags.iter().any(|f| f == name)
+    }
+}
+
+fn main() -> ExitCode {
+    let args = Args::parse();
+    if args.flag("--version") {
+        println!(
+            "dnfmt {} (DunneNote Format {FORMAT_VERSION}, schema {SCHEMA_VERSION})",
+            env!("CARGO_PKG_VERSION")
+        );
+        return ExitCode::SUCCESS;
+    }
+    if let Some(unknown) = args
+        .flags
+        .iter()
+        .find(|f| !matches!(f.as_str(), "--json" | "--full" | "--strict" | "--help"))
+    {
+        eprintln!("dnfmt: unknown option {unknown}\n\n{USAGE}");
+        return ExitCode::from(2);
+    }
+    let pos: Vec<&str> = args.positional.iter().map(String::as_str).collect();
+    let result = match pos.as_slice() {
+        ["inspect", path] => inspect(path, args.flag("--json")),
+        ["ls", path] => ls(path, args.flag("--json")),
+        ["cat", path, id] => cat(path, id),
+        ["verify", path] => {
+            return verify_cmd(
+                path,
+                args.flag("--full"),
+                args.flag("--json"),
+                args.flag("--strict"),
+            )
         }
+        _ => {
+            let code = if args.flag("--help") || pos.is_empty() {
+                0
+            } else {
+                2
+            };
+            eprintln!("{USAGE}");
+            return ExitCode::from(code);
+        }
+    };
+    match result {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(e) => {
+            eprintln!("dnfmt: {e}");
+            ExitCode::from(1)
+        }
+    }
+}
+
+fn inspect(path: &str, as_json: bool) -> Result<(), Error> {
+    let nb = Notebook::open(path)?;
+    let root = nb.notebook_node()?;
+    let counts = nb.counts()?;
+    let locked = nb.locked_by_another_process()?;
+    if as_json {
+        let out = json!({
+            "name": root.name,
+            "manifest": nb.manifest(),
+            "schema_version": nb.schema_version(),
+            "writable_by_this_version": nb.compat().writable(),
+            "open_in_another_process": locked,
+            "counts": counts,
+        });
+        println!("{}", serde_json::to_string_pretty(&out).unwrap_or_default());
+        return Ok(());
+    }
+    let m = nb.manifest();
+    println!("{}", root.name);
+    println!("  notebook id     {}", m.notebook_id);
+    println!(
+        "  schema          {} (created as format {})",
+        nb.schema_version(),
+        m.format_version
+    );
+    println!("  created by      {}", m.created_by);
+    if !nb.compat().writable() {
+        println!("  note            newer than this dnfmt; read-only");
+    }
+    if locked {
+        println!("  note            open in DunneNote right now");
+    }
+    println!("  sections        {}", counts.sections);
+    println!(
+        "  pages           {} ({} archived, {} templates)",
+        counts.pages, counts.archived_pages, counts.templates
+    );
+    println!(
+        "  canvases        {} ({} archived)",
+        counts.canvases, counts.archived_canvases
+    );
+    for (kind, n) in &counts.canvases_by_kind {
+        let name = CanvasKind::parse(kind)
+            .map(|k| k.display_name())
+            .unwrap_or(kind);
+        println!("    {name:<16}{n}");
+    }
+    println!("  tags            {}", counts.tags);
+    println!(
+        "  blobs           {} ({})",
+        counts.blobs,
+        human_bytes(counts.blob_bytes)
+    );
+    Ok(())
+}
+
+fn ls(path: &str, as_json: bool) -> Result<(), Error> {
+    let nb = Notebook::open(path)?;
+    let tree = nb.walk()?;
+    if as_json {
+        let items: Vec<_> = tree
+            .iter()
+            .map(|(depth, n)| json!({"depth": depth, "node": n}))
+            .collect();
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&items).unwrap_or_default()
+        );
+        return Ok(());
+    }
+    for (depth, node) in &tree {
+        let mut label = node.name.clone();
+        if node.kind == NodeKind::Page {
+            let n = nb.canvases(&node.id)?.len();
+            label.push_str(&format!("  ({n} canvas{})", if n == 1 { "" } else { "es" }));
+        }
+        if node.is_template {
+            label.push_str("  [template]");
+        }
+        if node.is_archived {
+            label.push_str("  [archived]");
+        }
+        let icon = match node.kind {
+            NodeKind::Notebook => "▣",
+            NodeKind::Group => "▸",
+            NodeKind::Page => "·",
+        };
+        println!("{}{icon} {label}  {}", "  ".repeat(*depth), node.id);
+    }
+    Ok(())
+}
+
+fn cat(path: &str, id: &str) -> Result<(), Error> {
+    let nb = Notebook::open(path)?;
+    match nb.node(id) {
+        Ok(node) => cat_page(&nb, &node),
+        Err(Error::NotFound { .. }) => cat_canvas(&nb, id, true),
+        Err(e) => Err(e),
+    }
+}
+
+fn cat_page(nb: &Notebook, node: &Node) -> Result<(), Error> {
+    if node.kind != NodeKind::Page {
+        for child in nb.children(&node.id)? {
+            println!("{}  {}", child.name, child.id);
+        }
+        return Ok(());
+    }
+    println!("# {}", node.name);
+    for canvas in nb.canvases(&node.id)? {
+        if canvas.is_hidden() || canvas.is_archived() {
+            continue;
+        }
+        println!();
+        cat_canvas(nb, &canvas.id, false)?;
+    }
+    Ok(())
+}
+
+fn cat_canvas(nb: &Notebook, id: &str, standalone: bool) -> Result<(), Error> {
+    let canvas = nb.canvas(id)?;
+    if !standalone {
+        println!("[{} {}]", canvas.kind.display_name(), canvas.id);
+    }
+    match canvas.kind {
+        CanvasKind::RichText => {
+            if let Some(rt) = nb.rich_text(id)? {
+                println!("{}", plain_text(&rt.doc));
+            }
+        }
+        CanvasKind::Sketch => {
+            let strokes = nb.sketch(id)?.map(|s| s.strokes().len()).unwrap_or(0);
+            println!("(sketch: {strokes} strokes)");
+        }
+        CanvasKind::Picture => {
+            let info = nb.blob_info(&canvas.source_hash)?;
+            let alt = canvas
+                .settings
+                .get("alt")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+            let alt = if alt.is_empty() {
+                String::new()
+            } else {
+                format!(", alt \"{alt}\"")
+            };
+            println!(
+                "(picture: {}, sha256 {}{alt})",
+                human_bytes(info.size_bytes),
+                &canvas.source_hash[..12]
+            );
+            if let Some(markup) = nb.sketch(id)? {
+                println!("(markup: {} strokes)", markup.strokes().len());
+            }
+        }
+        CanvasKind::Database | CanvasKind::Spreadsheet => {
+            if let Some(ds) = nb.dataset(id)? {
+                let names: Vec<&str> = ds.columns.iter().map(|c| c.name.as_str()).collect();
+                println!("{}", names.join("\t"));
+                for row in &ds.rows {
+                    println!("{}", ds.row_strings(row).join("\t"));
+                }
+            }
+        }
+        CanvasKind::Calendar => {
+            for ev in nb.calendar_events(id)? {
+                let when = if ev.all_day {
+                    utc_date(ev.start_utc)
+                } else {
+                    format!(
+                        "{} – {}",
+                        utc_datetime(ev.start_utc),
+                        utc_datetime(ev.end_utc)
+                    )
+                };
+                let place = if ev.location.is_empty() {
+                    String::new()
+                } else {
+                    format!(" @ {}", ev.location)
+                };
+                println!("{when}  {}{place}", ev.summary);
+            }
+        }
+    }
+    Ok(())
+}
+
+fn verify_cmd(path: &str, full: bool, as_json: bool, strict: bool) -> ExitCode {
+    let nb = match Notebook::open(path) {
+        Ok(nb) => nb,
+        Err(e) => {
+            eprintln!("dnfmt: {e}");
+            return ExitCode::from(1);
+        }
+    };
+    let level = if full {
+        VerifyLevel::Full
+    } else {
+        VerifyLevel::Quick
+    };
+    let report = match verify(&nb, level) {
+        Ok(r) => r,
+        Err(e) => {
+            eprintln!("dnfmt: {e}");
+            return ExitCode::from(1);
+        }
+    };
+    if as_json {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&report).unwrap_or_default()
+        );
+    } else {
+        for f in &report.findings {
+            let tag = match f.severity {
+                Severity::Info => "info",
+                Severity::Warning => "warning",
+                Severity::Error => "ERROR",
+            };
+            println!("{tag:<8}{:<16}{}", f.check, f.detail);
+        }
+        let verdict = if report.has_errors() {
+            "damaged"
+        } else if report.is_clean() {
+            "ok"
+        } else {
+            "ok, with warnings"
+        };
+        println!(
+            "{verdict} — {} checks{}",
+            report.checks_run.len(),
+            if full { " (full)" } else { "" }
+        );
+    }
+    if report.has_errors() || (strict && !report.is_clean()) {
+        ExitCode::from(1)
+    } else {
+        ExitCode::SUCCESS
+    }
+}
+
+fn human_bytes(n: i64) -> String {
+    let n = n as f64;
+    if n < 1024.0 {
+        format!("{n} B")
+    } else if n < 1024.0 * 1024.0 {
+        format!("{:.1} KB", n / 1024.0)
+    } else {
+        format!("{:.1} MB", n / 1024.0 / 1024.0)
+    }
+}
+
+/// Civil date from days since 1970-01-01 (Howard Hinnant's algorithm).
+fn civil(days: i64) -> (i64, u32, u32) {
+    let z = days + 719_468;
+    let era = z.div_euclid(146_097);
+    let doe = z.rem_euclid(146_097);
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;
+    (yoe + era * 400 + i64::from(m <= 2), m, d)
+}
+
+fn utc_date(secs: i64) -> String {
+    let (y, m, d) = civil(secs.div_euclid(86_400));
+    format!("{y:04}-{m:02}-{d:02}")
+}
+
+fn utc_datetime(secs: i64) -> String {
+    let s = secs.rem_euclid(86_400);
+    format!("{} {:02}:{:02}Z", utc_date(secs), s / 3600, (s % 3600) / 60)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dates() {
+        assert_eq!(utc_date(0), "1970-01-01");
+        assert_eq!(utc_datetime(1_758_000_000), "2025-09-16 05:20Z");
+        assert_eq!(utc_date(951_782_400), "2000-02-29");
     }
 }
