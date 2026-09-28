@@ -1,0 +1,20 @@
+[package]
+name = "dunnenote-format"
+description = "Read and write DunneNote notebooks (.dunnenote) — the open DunneNote Format."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+rusqlite = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+
+[lints]
+workspace = true

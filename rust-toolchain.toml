@@ -1,0 +1,6 @@
+# Same toolchain as DunneNote: tag folding (fold v1) uses str::to_lowercase, whose
+# Unicode tables follow the Rust version.
+[toolchain]
+channel = "1.95.0"
+components = ["rustfmt", "clippy"]
+profile = "minimal"

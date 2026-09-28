@@ -1,0 +1,28 @@
+[workspace]
+resolver = "2"
+members = ["crates/dunnenote-format", "crates/dunnenote-cli"]
+
+[workspace.package]
+version = "0.1.0-dev"
+edition = "2021"
+rust-version = "1.95"
+license = "MIT"
+authors = ["Dunne, Corp."]
+
+# Pinned to the exact versions DunneNote itself uses, so bytes written here
+# match bytes written by the app (e.g. serde_json key order, SQLite build).
+[workspace.dependencies]
+rusqlite = { version = "=0.39.0", features = ["bundled", "functions"] }
+serde = { version = "=1.0.228", features = ["derive"] }
+serde_json = { version = "=1.0.150", features = ["preserve_order"] }
+thiserror = { version = "=2.0.18" }
+uuid = { version = "=1.23.1", features = ["v7"] }
+sha2 = { version = "=0.10.9" }
+hex = { version = "=0.4.3" }
+fs4 = { version = "=0.13.1", features = ["sync"] }
+fractional_index = { version = "=1.0.1" }
+unicode-normalization = { version = "=0.1.24" }
+tempfile = { version = "=3.27.0" }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"

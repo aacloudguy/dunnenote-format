@@ -1,0 +1,3 @@
+target/
+*.dunnenote/.dunnenote.lock
+.DS_Store

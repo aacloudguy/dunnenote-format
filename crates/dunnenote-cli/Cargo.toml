@@ -1,0 +1,18 @@
+[package]
+name = "dunnenote-cli"
+description = "dnfmt — inspect, verify, export and edit DunneNote notebooks."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "dnfmt"
+path = "src/main.rs"
+
+[dependencies]
+dunnenote-format = { path = "../dunnenote-format" }
+
+[lints]
+workspace = true
