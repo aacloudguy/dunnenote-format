@@ -37,6 +37,7 @@
 
 pub mod error;
 pub mod export;
+pub mod fold;
 pub mod gate;
 pub mod manifest;
 pub mod model;
@@ -44,6 +45,7 @@ pub mod notebook;
 pub mod payload;
 pub mod position;
 pub mod schema;
+pub mod settings_keys;
 pub mod text;
 pub mod verify;
 pub mod write;

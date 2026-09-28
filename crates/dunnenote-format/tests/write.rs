@@ -5,12 +5,7 @@
 //! schema versions, layering and the manifest. DunneNote's own round-trip test separately opens
 //! the notebooks built in `support/written.rs` in the app.
 
-use std::path::Path;
-
-use dunnenote_format::{
-    payload, verify, At, CanvasKind, Error, Frame, Notebook, Settings, VerifyLevel,
-};
-use rusqlite::Connection;
+use dunnenote_format::{payload, At, CanvasKind, Error, Frame, Notebook, Settings};
 use serde_json::{json, Value};
 use tempfile::TempDir;
 
@@ -18,38 +13,9 @@ use tempfile::TempDir;
 mod written;
 use written::{settings, stroke, PNG};
 
-fn raw(root: &Path) -> Connection {
-    Connection::open(root.join("notebook.db")).unwrap()
-}
-
-fn count(root: &Path, sql: &str) -> i64 {
-    raw(root).query_row(sql, [], |r| r.get(0)).unwrap()
-}
-
-fn new_notebook(dir: &TempDir, name: &str) -> (Notebook, String) {
-    let nb = Notebook::create(dir.path().join(format!("{name}.dunnenote")), None).unwrap();
-    let root = nb.notebook_node().unwrap().id;
-    (nb, root)
-}
-
-fn page_in(nb: &mut Notebook, root: &str) -> String {
-    nb.write(|w| {
-        let s = w.add_section(root, "S", At::End)?;
-        w.add_page(&s, "P", At::End)
-    })
-    .unwrap()
-}
-
-fn assert_clean(root: &Path) {
-    let nb = Notebook::open(root).unwrap();
-    let report = verify(&nb, VerifyLevel::Full).unwrap();
-    let problems: Vec<_> = report
-        .findings
-        .iter()
-        .filter(|f| f.check != "search_index")
-        .collect();
-    assert!(problems.is_empty(), "{}: {problems:?}", root.display());
-}
+#[path = "support/common.rs"]
+mod common;
+use common::{assert_clean, count, new_notebook, page_in, raw};
 
 // ---- creating ---------------------------------------------------------------------------------
 

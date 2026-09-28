@@ -38,6 +38,7 @@ use crate::notebook::{blob_path_in, Notebook};
 use crate::payload;
 use crate::position;
 use crate::schema::{create_schema, FORMAT_VERSION, SCHEMA_VERSION};
+use crate::settings_keys;
 
 /// The folder extension every notebook has.
 pub const NOTEBOOK_EXT: &str = ".dunnenote";
@@ -650,6 +651,44 @@ impl Writer<'_> {
             params![id, name],
         )?;
         Ok(())
+    }
+
+    /// Merge `patch` into a page's settings (`nodes.settings`) as DunneNote does: a `null` value
+    /// removes a key, keys this library does not know are kept, DunneNote's own keys are written
+    /// only when not their default, and nothing left means the column is NULL. Returns what is
+    /// stored. See [`settings_keys::PAGE_KEYS`].
+    pub fn merge_page_settings(
+        &mut self,
+        page: &str,
+        patch: &Settings,
+    ) -> Result<Option<Settings>> {
+        if self.node_kind(page)? != "page" {
+            return Err(Error::Invalid(format!(
+                "{page} is not a page; only pages have settings"
+            )));
+        }
+        settings_keys::check_page_patch(patch)?;
+        let stored: Option<String> =
+            self.tx
+                .query_row("SELECT settings FROM nodes WHERE id = ?1", [page], |r| {
+                    r.get(0)
+                })?;
+        let stored = match stored.as_deref().map(serde_json::from_str::<Value>) {
+            None => None,
+            Some(Ok(Value::Object(map))) => Some(map),
+            Some(_) => {
+                return Err(Error::Refused(format!(
+                    "page {page}'s settings are not a JSON object; not overwriting them"
+                )))
+            }
+        };
+        let merged = settings_keys::merge_page(stored.as_ref(), patch);
+        let json = merged.as_ref().map(Self::settings_json).transpose()?;
+        self.tx.execute(
+            "UPDATE nodes SET settings = ?2, updated_at = unixepoch() WHERE id = ?1",
+            params![page, json],
+        )?;
+        Ok(merged)
     }
 
     // ---- canvases -------------------------------------------------------------------------
