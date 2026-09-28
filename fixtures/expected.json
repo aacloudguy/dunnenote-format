@@ -1,0 +1,1808 @@
+{
+  "notebooks": {
+    "minimal": {
+      "tree": [
+        {
+          "depth": 0,
+          "kind": "notebook",
+          "id": "01a0e92f-2e09-7520-8e27-cc1dcb923428",
+          "name": "Minimal",
+          "is_template": false,
+          "is_archived": false,
+          "settings": null
+        },
+        {
+          "depth": 1,
+          "kind": "group",
+          "id": "01a0e92f-2e0a-7ef0-9ecf-920de2202292",
+          "name": "Section",
+          "is_template": false,
+          "is_archived": false,
+          "settings": null
+        },
+        {
+          "depth": 2,
+          "kind": "page",
+          "id": "01a0e92f-2e0b-7153-851d-15dcfcabbb5f",
+          "name": "Empty page",
+          "is_template": false,
+          "is_archived": false,
+          "settings": null
+        }
+      ],
+      "pages": {
+        "01a0e92f-2e0b-7153-851d-15dcfcabbb5f": {
+          "canvases": [],
+          "groups": []
+        }
+      },
+      "tags": [],
+      "item_tags": [],
+      "meta": []
+    },
+    "every-kind": {
+      "tree": [
+        {
+          "depth": 0,
+          "kind": "notebook",
+          "id": "01a0e92f-2e82-7db0-a05f-a5715c9ed9dc",
+          "name": "Every Kind",
+          "is_template": false,
+          "is_archived": false,
+          "settings": null
+        },
+        {
+          "depth": 1,
+          "kind": "group",
+          "id": "01a0e92f-2e83-7052-a1cd-63e2614b7628",
+          "name": "Research",
+          "is_template": false,
+          "is_archived": false,
+          "settings": null
+        },
+        {
+          "depth": 2,
+          "kind": "page",
+          "id": "01a0e92f-2e83-7052-a1cd-63fdf20d80a0",
+          "name": "Overview",
+          "is_template": false,
+          "is_archived": false,
+          "settings": null
+        },
+        {
+          "depth": 2,
+          "kind": "group",
+          "id": "01a0e92f-2e84-7872-bdfd-8abaadd6de01",
+          "name": "Background",
+          "is_template": false,
+          "is_archived": false,
+          "settings": null
+        },
+        {
+          "depth": 3,
+          "kind": "page",
+          "id": "01a0e92f-2e85-7161-9925-73fbdb5e4b58",
+          "name": "Reading list",
+          "is_template": false,
+          "is_archived": false,
+          "settings": null
+        },
+        {
+          "depth": 1,
+          "kind": "group",
+          "id": "01a0e92f-2e85-7161-9925-740054ac08fe",
+          "name": "Planning",
+          "is_template": false,
+          "is_archived": false,
+          "settings": null
+        },
+        {
+          "depth": 2,
+          "kind": "page",
+          "id": "01a0e92f-2e86-7712-91ce-2224b2f5759c",
+          "name": "Schedule",
+          "is_template": false,
+          "is_archived": false,
+          "settings": null
+        }
+      ],
+      "pages": {
+        "01a0e92f-2e83-7052-a1cd-63fdf20d80a0": {
+          "canvases": [
+            {
+              "id": "01a0e92f-2e93-7d31-94a2-89717d01f379",
+              "kind": "database",
+              "source_hash": "5c587aa5819695244ec8ab1148e4893d3b2be1b84424c955c8fe716bc70ea47a",
+              "x": 620,
+              "y": 40,
+              "width": 420,
+              "height": 180,
+              "z_index": 0,
+              "z_minor": 0,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {},
+              "content": {
+                "dataset_id": "01a0e92f-2e94-7170-a3ea-4277244d8ea3",
+                "shape": "table",
+                "source_kind": "csv",
+                "row_count": 3,
+                "columns": [
+                  {
+                    "col_key": "c0",
+                    "name": "Task",
+                    "type_hint": "text",
+                    "position": 0
+                  },
+                  {
+                    "col_key": "c1",
+                    "name": "Owner",
+                    "type_hint": "text",
+                    "position": 1
+                  },
+                  {
+                    "col_key": "c2",
+                    "name": "Hours",
+                    "type_hint": "number",
+                    "position": 2
+                  },
+                  {
+                    "col_key": "c3",
+                    "name": "Done",
+                    "type_hint": "boolean",
+                    "position": 3
+                  }
+                ],
+                "rows": [
+                  {
+                    "id": "01a0e92f-2e94-7170-a3ea-42c6b25c393f",
+                    "seq": 0,
+                    "cells": {
+                      "c0": "Draft the outline",
+                      "c1": "Ada",
+                      "c2": 3,
+                      "c3": true
+                    }
+                  },
+                  {
+                    "id": "01a0e92f-2e94-7170-a3ea-42d6d5dc0871",
+                    "seq": 1,
+                    "cells": {
+                      "c0": "Collect sources",
+                      "c1": "Grace",
+                      "c2": 5.5,
+                      "c3": false
+                    }
+                  },
+                  {
+                    "id": "01a0e92f-2e94-7170-a3ea-42e371c49bf4",
+                    "seq": 2,
+                    "cells": {
+                      "c0": "Review with the team",
+                      "c1": "Linus",
+                      "c2": 1,
+                      "c3": false
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "id": "01a0e92f-2e9e-7b00-9027-fa0eec7ad7c3",
+              "kind": "rich_text",
+              "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
+              "x": 40,
+              "y": 40,
+              "width": 520,
+              "height": 320,
+              "z_index": 0,
+              "z_minor": 1,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {},
+              "content": {
+                "doc": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "heading",
+                      "attrs": {
+                        "level": 1,
+                        "align": "left"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Project overview"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "align": "left"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "This page holds "
+                        },
+                        {
+                          "type": "text",
+                          "marks": [
+                            {
+                              "type": "strong"
+                            }
+                          ],
+                          "text": "one canvas of every kind"
+                        },
+                        {
+                          "type": "text",
+                          "text": ", with "
+                        },
+                        {
+                          "type": "text",
+                          "marks": [
+                            {
+                              "type": "em"
+                            }
+                          ],
+                          "text": "emphasis"
+                        },
+                        {
+                          "type": "text",
+                          "text": ", "
+                        },
+                        {
+                          "type": "text",
+                          "marks": [
+                            {
+                              "type": "underline"
+                            }
+                          ],
+                          "text": "underline"
+                        },
+                        {
+                          "type": "text",
+                          "text": ", "
+                        },
+                        {
+                          "type": "text",
+                          "marks": [
+                            {
+                              "type": "strike"
+                            }
+                          ],
+                          "text": "strike"
+                        },
+                        {
+                          "type": "text",
+                          "text": " and a "
+                        },
+                        {
+                          "type": "text",
+                          "marks": [
+                            {
+                              "type": "link",
+                              "attrs": {
+                                "href": "https://example.com/",
+                                "title": null
+                              }
+                            }
+                          ],
+                          "text": "web link"
+                        },
+                        {
+                          "type": "text",
+                          "text": "."
+                        }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": {
+                        "level": 2,
+                        "align": "left"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Next steps"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "bullet_list",
+                      "content": [
+                        {
+                          "type": "list_item",
+                          "content": [
+                            {
+                              "type": "paragraph",
+                              "attrs": {
+                                "align": "left"
+                              },
+                              "content": [
+                                {
+                                  "type": "text",
+                                  "text": "Confirm the budget"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "list_item",
+                          "content": [
+                            {
+                              "type": "paragraph",
+                              "attrs": {
+                                "align": "left"
+                              },
+                              "content": [
+                                {
+                                  "type": "text",
+                                  "text": "Book the room"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "ordered_list",
+                      "attrs": {
+                        "order": 1
+                      },
+                      "content": [
+                        {
+                          "type": "list_item",
+                          "content": [
+                            {
+                              "type": "paragraph",
+                              "attrs": {
+                                "align": "left"
+                              },
+                              "content": [
+                                {
+                                  "type": "text",
+                                  "text": "Draft"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "list_item",
+                          "content": [
+                            {
+                              "type": "paragraph",
+                              "attrs": {
+                                "align": "left"
+                              },
+                              "content": [
+                                {
+                                  "type": "text",
+                                  "text": "Review"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "align": "left"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "See "
+                        },
+                        {
+                          "type": "notebook_link",
+                          "attrs": {
+                            "canvasId": "01a0e92f-2e93-7d31-94a2-89717d01f379",
+                            "labelSnapshot": "Tasks",
+                            "notebookId": "",
+                            "notebookLabelSnapshot": ""
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "text": " for the task list."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "01a0e92f-2ea8-7af2-8592-bc58b329c327",
+              "kind": "sketch",
+              "source_hash": "0b7e1105132b4dca5b3b88bdf5a8ba4e61e4c3e7928dbd87138bf2b5595d5883",
+              "x": 40,
+              "y": 400,
+              "width": 300,
+              "height": 200,
+              "z_index": 0,
+              "z_minor": 2,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {},
+              "content": {
+                "strokes": {
+                  "v": 1,
+                  "strokes": [
+                    {
+                      "id": "golden-stroke-1",
+                      "points": [
+                        {
+                          "x": 0.1,
+                          "y": 0.2,
+                          "p": 0.5
+                        },
+                        {
+                          "x": 0.4,
+                          "y": 0.5,
+                          "p": 0.6
+                        },
+                        {
+                          "x": 0.8,
+                          "y": 0.3,
+                          "p": 0.7
+                        }
+                      ],
+                      "color": "#C2410C",
+                      "width": 3.0,
+                      "tool": "pen"
+                    },
+                    {
+                      "id": "golden-stroke-2",
+                      "points": [
+                        {
+                          "x": 0.2,
+                          "y": 0.8,
+                          "p": 0.5
+                        },
+                        {
+                          "x": 0.7,
+                          "y": 0.8,
+                          "p": 0.5
+                        }
+                      ],
+                      "color": "#1D4ED8",
+                      "width": 2.0,
+                      "tool": "pen"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "01a0e92f-2eb4-7a40-95c9-77c160664f56",
+              "kind": "picture",
+              "source_hash": "e4153f382e250ba2ca62ed705f7b962419e9083bf5a46a6d337e0427748bfe33",
+              "x": 380,
+              "y": 400,
+              "width": 160,
+              "height": 160,
+              "z_index": 0,
+              "z_minor": 3,
+              "group_id": "01a0e92f-2ebf-75a2-a123-8047b08117ac",
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {
+                "alt": "Four coloured squares"
+              },
+              "content": {
+                "strokes": {
+                  "v": 1,
+                  "strokes": [
+                    {
+                      "id": "golden-markup-1",
+                      "points": [
+                        {
+                          "x": 0.25,
+                          "y": 0.25,
+                          "p": 0.5
+                        },
+                        {
+                          "x": 0.75,
+                          "y": 0.75,
+                          "p": 0.5
+                        }
+                      ],
+                      "color": "#000000",
+                      "width": 2.0,
+                      "tool": "pen"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "01a0e92f-2ebe-75e1-a70d-549ec1cfa04e",
+              "kind": "rich_text",
+              "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
+              "x": 380,
+              "y": 570,
+              "width": 160,
+              "height": 40,
+              "z_index": 0,
+              "z_minor": 4,
+              "group_id": "01a0e92f-2ebf-75a2-a123-8047b08117ac",
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {
+                "caption": {
+                  "anchor": "01a0e92f-2eb4-7a40-95c9-77c160664f56",
+                  "placement": "bottom"
+                }
+              },
+              "content": {
+                "doc": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "align": "left"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Figure 1. The colour key."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "01a0e92f-2ec9-7a03-90bd-309fc999cb0c",
+              "kind": "spreadsheet",
+              "source_hash": "31dab27d06645fa76fda6ff0d5f22a42387c0970bc458275242ee456e8184e24",
+              "x": 620,
+              "y": 260,
+              "width": 360,
+              "height": 160,
+              "z_index": 0,
+              "z_minor": 5,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {},
+              "content": {
+                "dataset_id": "01a0e92f-2eca-7202-b954-0cf96cd8af88",
+                "shape": "table",
+                "source_kind": "paste",
+                "row_count": 3,
+                "columns": [
+                  {
+                    "col_key": "c0",
+                    "name": "Column 1",
+                    "type_hint": "unknown",
+                    "position": 0
+                  },
+                  {
+                    "col_key": "c1",
+                    "name": "Column 2",
+                    "type_hint": "unknown",
+                    "position": 1
+                  },
+                  {
+                    "col_key": "c2",
+                    "name": "Column 3",
+                    "type_hint": "unknown",
+                    "position": 2
+                  }
+                ],
+                "rows": [
+                  {
+                    "id": "01a0e92f-2eca-7202-b954-0d350703038f",
+                    "seq": 0,
+                    "cells": {
+                      "c0": "R1C1",
+                      "c1": "R1C2",
+                      "c2": "R1C3"
+                    }
+                  },
+                  {
+                    "id": "01a0e92f-2eca-7202-b954-0d4c31ac3ac8",
+                    "seq": 1,
+                    "cells": {
+                      "c0": "R2C1",
+                      "c1": "R2C2",
+                      "c2": "R2C3"
+                    }
+                  },
+                  {
+                    "id": "01a0e92f-2eca-7202-b954-0d587f6c0517",
+                    "seq": 2,
+                    "cells": {
+                      "c0": "R3C1",
+                      "c1": "R3C2",
+                      "c2": "R3C3"
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "groups": [
+            {
+              "id": "01a0e92f-2ebf-75a2-a123-8047b08117ac",
+              "parent_group_id": null
+            },
+            {
+              "id": "01a0e92f-2ec0-7b20-bbaa-890dbefa502b",
+              "parent_group_id": "01a0e92f-2ebf-75a2-a123-8047b08117ac"
+            }
+          ]
+        },
+        "01a0e92f-2e85-7161-9925-73fbdb5e4b58": {
+          "canvases": [],
+          "groups": []
+        },
+        "01a0e92f-2e86-7712-91ce-2224b2f5759c": {
+          "canvases": [
+            {
+              "id": "01a0e92f-2eda-7bb3-9939-7c29490cd03b",
+              "kind": "calendar",
+              "source_hash": "a598b7358d54ca31f2742f6a9046e0448f7cd380c2a89b4d9fe080935cf42092",
+              "x": 40,
+              "y": 40,
+              "width": 600,
+              "height": 400,
+              "z_index": 0,
+              "z_minor": 0,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {},
+              "content": {
+                "events": [
+                  {
+                    "id": "01a0e92f-2edb-7413-a277-37675a57d803",
+                    "uid": "golden-standup@example.invalid",
+                    "summary": "Weekly stand-up",
+                    "location": "Room 4",
+                    "description": "Status round and blockers.",
+                    "start_utc": 1767625200,
+                    "end_utc": 1767627000,
+                    "all_day": false,
+                    "tzid": "UTC"
+                  },
+                  {
+                    "id": "01a0e92f-2edb-7413-a277-37812686319b",
+                    "uid": "golden-offsite@example.invalid",
+                    "summary": "Planning offsite",
+                    "location": "",
+                    "description": "",
+                    "start_utc": 1770854400,
+                    "end_utc": 1770940800,
+                    "all_day": true,
+                    "tzid": null
+                  }
+                ]
+              }
+            }
+          ],
+          "groups": []
+        }
+      },
+      "tags": [],
+      "item_tags": [],
+      "meta": []
+    },
+    "forms": {
+      "tree": [
+        {
+          "depth": 0,
+          "kind": "notebook",
+          "id": "01a0e92f-2f35-72a0-b89d-055e624eb746",
+          "name": "Forms",
+          "is_template": false,
+          "is_archived": false,
+          "settings": null
+        },
+        {
+          "depth": 1,
+          "kind": "group",
+          "id": "01a0e92f-2f36-7350-bc66-91025cf115e0",
+          "name": "Intake",
+          "is_template": false,
+          "is_archived": false,
+          "settings": null
+        },
+        {
+          "depth": 2,
+          "kind": "page",
+          "id": "01a0e92f-2f36-7350-bc66-911e564d5ae1",
+          "name": "Sign-up form",
+          "is_template": false,
+          "is_archived": false,
+          "settings": {
+            "formTabOrder": [
+              "01a0e92f-2f44-7503-976f-e5f1aa195201",
+              "01a0e92f-2f4f-76f2-b95d-78515def96e2",
+              "01a0e92f-2f5a-7ab0-83b0-0cf08deacc53"
+            ],
+            "formDestination": {
+              "kind": "canvas",
+              "id": "01a0e92f-2f64-7f83-be7b-d5d1d27bd02b"
+            }
+          }
+        }
+      ],
+      "pages": {
+        "01a0e92f-2f36-7350-bc66-911e564d5ae1": {
+          "canvases": [
+            {
+              "id": "01a0e92f-2f44-7503-976f-e5f1aa195201",
+              "kind": "rich_text",
+              "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
+              "x": 40,
+              "y": 40,
+              "width": 320,
+              "height": 60,
+              "z_index": 0,
+              "z_minor": 0,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {
+                "formField": {
+                  "name": "Name",
+                  "required": true
+                }
+              },
+              "content": {
+                "doc": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "align": "left"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Ada Example"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "01a0e92f-2f4f-76f2-b95d-78515def96e2",
+              "kind": "rich_text",
+              "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
+              "x": 40,
+              "y": 120,
+              "width": 320,
+              "height": 60,
+              "z_index": 0,
+              "z_minor": 1,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {
+                "formField": {
+                  "name": "Team",
+                  "label": "Which team?"
+                }
+              },
+              "content": {
+                "doc": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "align": "left"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Research"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "01a0e92f-2f5a-7ab0-83b0-0cf08deacc53",
+              "kind": "sketch",
+              "source_hash": "0b7e1105132b4dca5b3b88bdf5a8ba4e61e4c3e7928dbd87138bf2b5595d5883",
+              "x": 40,
+              "y": 200,
+              "width": 320,
+              "height": 120,
+              "z_index": 0,
+              "z_minor": 2,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {
+                "formField": {
+                  "name": "Signature"
+                }
+              },
+              "content": {
+                "strokes": {
+                  "v": 1,
+                  "strokes": [
+                    {
+                      "id": "golden-signature-1",
+                      "points": [
+                        {
+                          "x": 0.1,
+                          "y": 0.6,
+                          "p": 0.5
+                        },
+                        {
+                          "x": 0.5,
+                          "y": 0.4,
+                          "p": 0.6
+                        },
+                        {
+                          "x": 0.9,
+                          "y": 0.6,
+                          "p": 0.5
+                        }
+                      ],
+                      "color": "#111827",
+                      "width": 2.0,
+                      "tool": "pen"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "01a0e92f-2f64-7f83-be7b-d5d1d27bd02b",
+              "kind": "spreadsheet",
+              "source_hash": "31dab27d06645fa76fda6ff0d5f22a42387c0970bc458275242ee456e8184e24",
+              "x": 420,
+              "y": 40,
+              "width": 480,
+              "height": 200,
+              "z_index": 0,
+              "z_minor": 3,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {
+                "formTarget": {
+                  "ownedByForm": true
+                }
+              },
+              "content": {
+                "dataset_id": "01a0e92f-2f65-7c53-8050-d7b603131133",
+                "shape": "table",
+                "source_kind": "csv",
+                "row_count": 1,
+                "columns": [
+                  {
+                    "col_key": "c0",
+                    "name": "Name",
+                    "type_hint": "text",
+                    "position": 0
+                  },
+                  {
+                    "col_key": "c1",
+                    "name": "Team",
+                    "type_hint": "text",
+                    "position": 1
+                  },
+                  {
+                    "col_key": "c2",
+                    "name": "Signature",
+                    "type_hint": "text",
+                    "position": 2
+                  },
+                  {
+                    "col_key": "c3",
+                    "name": "Submitted",
+                    "type_hint": "text",
+                    "position": 3
+                  }
+                ],
+                "rows": [
+                  {
+                    "id": "01a0e92f-2f73-7211-8d18-8194e6a4b199",
+                    "seq": 0,
+                    "cells": {
+                      "c0": "Ada Example",
+                      "c1": "Research",
+                      "c2": "sketch:01a0e92f-2f72-7d91-8ec0-9097b1d41380",
+                      "c3": "2026-01-05T09:30:00+00:00"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "id": "01a0e92f-2f72-7d91-8ec0-9097b1d41380",
+              "kind": "sketch",
+              "source_hash": "0b7e1105132b4dca5b3b88bdf5a8ba4e61e4c3e7928dbd87138bf2b5595d5883",
+              "x": 40,
+              "y": 200,
+              "width": 320,
+              "height": 120,
+              "z_index": 0,
+              "z_minor": 4,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {
+                "hidden": true
+              },
+              "content": {
+                "strokes": {
+                  "v": 1,
+                  "strokes": [
+                    {
+                      "id": "golden-signature-1",
+                      "points": [
+                        {
+                          "x": 0.1,
+                          "y": 0.6,
+                          "p": 0.5
+                        },
+                        {
+                          "x": 0.5,
+                          "y": 0.4,
+                          "p": 0.6
+                        },
+                        {
+                          "x": 0.9,
+                          "y": 0.6,
+                          "p": 0.5
+                        }
+                      ],
+                      "color": "#111827",
+                      "width": 2.0,
+                      "tool": "pen"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "groups": []
+        }
+      },
+      "tags": [],
+      "item_tags": [],
+      "meta": []
+    },
+    "template": {
+      "tree": [
+        {
+          "depth": 0,
+          "kind": "notebook",
+          "id": "01a0e92f-2fcd-7d63-a60d-3b892df48b00",
+          "name": "Templates",
+          "is_template": false,
+          "is_archived": false,
+          "settings": null
+        },
+        {
+          "depth": 1,
+          "kind": "group",
+          "id": "01a0e92f-2fce-7423-bb36-efdc60bed1d4",
+          "name": "Meetings",
+          "is_template": false,
+          "is_archived": false,
+          "settings": null
+        },
+        {
+          "depth": 2,
+          "kind": "page",
+          "id": "01a0e92f-2fce-7423-bb36-efe1e9253097",
+          "name": "Meeting notes",
+          "is_template": false,
+          "is_archived": false,
+          "settings": null
+        },
+        {
+          "depth": 2,
+          "kind": "page",
+          "id": "01a0e92f-3000-7370-82ba-ad81ebbd3b53",
+          "name": "Meeting notes (template)",
+          "is_template": true,
+          "is_archived": false,
+          "settings": null
+        },
+        {
+          "depth": 2,
+          "kind": "page",
+          "id": "01a0e92f-3002-7502-b159-0b0e6e50afde",
+          "name": "Meeting notes",
+          "is_template": false,
+          "is_archived": false,
+          "settings": null
+        }
+      ],
+      "pages": {
+        "01a0e92f-2fce-7423-bb36-efe1e9253097": {
+          "canvases": [
+            {
+              "id": "01a0e92f-2fdf-7cb2-963e-b88252bc15e8",
+              "kind": "rich_text",
+              "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
+              "x": 40,
+              "y": 40,
+              "width": 480,
+              "height": 80,
+              "z_index": 0,
+              "z_minor": 0,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {
+                "templateKeepContent": true
+              },
+              "content": {
+                "doc": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "heading",
+                      "attrs": {
+                        "level": 1,
+                        "align": "left"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Agenda"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "align": "left"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Kept in every copy."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "01a0e92f-2fea-7371-abdb-da536a9739d8",
+              "kind": "rich_text",
+              "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
+              "x": 40,
+              "y": 140,
+              "width": 480,
+              "height": 200,
+              "z_index": 0,
+              "z_minor": 1,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {},
+              "content": {
+                "doc": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "align": "left"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Cleared when the template is made."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "01a0e92f-2ff5-7522-a361-1926ee38f0c6",
+              "kind": "picture",
+              "source_hash": "e4153f382e250ba2ca62ed705f7b962419e9083bf5a46a6d337e0427748bfe33",
+              "x": 560,
+              "y": 40,
+              "width": 160,
+              "height": 160,
+              "z_index": 0,
+              "z_minor": 2,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {
+                "alt": "Room photo"
+              },
+              "content": {
+                "strokes": null
+              }
+            }
+          ],
+          "groups": []
+        },
+        "01a0e92f-3000-7370-82ba-ad81ebbd3b53": {
+          "canvases": [
+            {
+              "id": "01a0e92f-3000-7370-82ba-ad9fa8e3cae9",
+              "kind": "rich_text",
+              "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
+              "x": 40,
+              "y": 40,
+              "width": 480,
+              "height": 80,
+              "z_index": 0,
+              "z_minor": 0,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {
+                "templateKeepContent": true
+              },
+              "content": {
+                "doc": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "heading",
+                      "attrs": {
+                        "level": 1,
+                        "align": "left"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Agenda"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "align": "left"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Kept in every copy."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "01a0e92f-3001-7580-a45a-4167c1f5f640",
+              "kind": "rich_text",
+              "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
+              "x": 40,
+              "y": 140,
+              "width": 480,
+              "height": 200,
+              "z_index": 0,
+              "z_minor": 1,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {},
+              "content": {
+                "doc": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "01a0e92f-3001-7580-a45a-417d0fa57f16",
+              "kind": "picture",
+              "source_hash": "f999f31fe5e877e891b7f85f4d26559818b8f3f01604900ed6073b9e284eaac4",
+              "x": 560,
+              "y": 40,
+              "width": 160,
+              "height": 160,
+              "z_index": 0,
+              "z_minor": 2,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {
+                "placeholder": true
+              },
+              "content": {
+                "strokes": null
+              }
+            }
+          ],
+          "groups": []
+        },
+        "01a0e92f-3002-7502-b159-0b0e6e50afde": {
+          "canvases": [
+            {
+              "id": "01a0e92f-3002-7502-b159-0b135fdc5b7e",
+              "kind": "rich_text",
+              "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
+              "x": 40,
+              "y": 40,
+              "width": 480,
+              "height": 80,
+              "z_index": 0,
+              "z_minor": 0,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {
+                "templateKeepContent": true
+              },
+              "content": {
+                "doc": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "heading",
+                      "attrs": {
+                        "level": 1,
+                        "align": "left"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Agenda"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "align": "left"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Kept in every copy."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "01a0e92f-3002-7502-b159-0b294cb9a228",
+              "kind": "rich_text",
+              "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
+              "x": 40,
+              "y": 140,
+              "width": 480,
+              "height": 200,
+              "z_index": 0,
+              "z_minor": 1,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {},
+              "content": {
+                "doc": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "01a0e92f-3002-7502-b159-0b3842da3145",
+              "kind": "picture",
+              "source_hash": "f999f31fe5e877e891b7f85f4d26559818b8f3f01604900ed6073b9e284eaac4",
+              "x": 560,
+              "y": 40,
+              "width": 160,
+              "height": 160,
+              "z_index": 0,
+              "z_minor": 2,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {
+                "placeholder": true
+              },
+              "content": {
+                "strokes": null
+              }
+            }
+          ],
+          "groups": []
+        }
+      },
+      "tags": [],
+      "item_tags": [],
+      "meta": []
+    },
+    "archive": {
+      "tree": [
+        {
+          "depth": 0,
+          "kind": "notebook",
+          "id": "01a0e92f-3059-7143-90ad-5446584d5462",
+          "name": "Archive",
+          "is_template": false,
+          "is_archived": false,
+          "settings": null
+        },
+        {
+          "depth": 1,
+          "kind": "group",
+          "id": "01a0e92f-305a-7b60-bf38-acb0fcdd6cc3",
+          "name": "Drafts",
+          "is_template": false,
+          "is_archived": false,
+          "settings": null
+        },
+        {
+          "depth": 2,
+          "kind": "page",
+          "id": "01a0e92f-305b-7063-986d-6cf1f9b7666e",
+          "name": "First draft",
+          "is_template": false,
+          "is_archived": true,
+          "settings": null
+        },
+        {
+          "depth": 2,
+          "kind": "page",
+          "id": "01a0e92f-306b-7da0-9dfa-4cdfbe4d151c",
+          "name": "Second draft",
+          "is_template": false,
+          "is_archived": false,
+          "settings": null
+        }
+      ],
+      "pages": {
+        "01a0e92f-305b-7063-986d-6cf1f9b7666e": {
+          "canvases": [
+            {
+              "id": "01a0e92f-306a-7022-bdf4-f431743bb38d",
+              "kind": "rich_text",
+              "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
+              "x": 40,
+              "y": 40,
+              "width": 400,
+              "height": 120,
+              "z_index": 0,
+              "z_minor": 0,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {},
+              "content": {
+                "doc": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "align": "left"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Replaced by the second draft."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "groups": []
+        },
+        "01a0e92f-306b-7da0-9dfa-4cdfbe4d151c": {
+          "canvases": [
+            {
+              "id": "01a0e92f-3077-7e83-ab4b-13182b5a7c49",
+              "kind": "rich_text",
+              "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
+              "x": 40,
+              "y": 40,
+              "width": 400,
+              "height": 120,
+              "z_index": 0,
+              "z_minor": 0,
+              "group_id": null,
+              "lifecycle": "archived",
+              "lifecycle_reason": "other",
+              "lifecycle_note": "Out of scope for this release.",
+              "settings": {},
+              "content": {
+                "doc": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "align": "left"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "An abandoned paragraph."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "01a0e92f-3081-7022-b137-d7b927b1990c",
+              "kind": "rich_text",
+              "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
+              "x": 40,
+              "y": 200,
+              "width": 400,
+              "height": 120,
+              "z_index": 0,
+              "z_minor": 5,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {},
+              "content": {
+                "doc": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "align": "left"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "The paragraph that stays."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "groups": []
+        }
+      },
+      "tags": [],
+      "item_tags": [],
+      "meta": []
+    },
+    "tags": {
+      "tree": [
+        {
+          "depth": 0,
+          "kind": "notebook",
+          "id": "01a0e92f-30e0-7ac1-b526-6ab0cd7b1154",
+          "name": "Tags",
+          "is_template": false,
+          "is_archived": false,
+          "settings": null
+        },
+        {
+          "depth": 1,
+          "kind": "group",
+          "id": "01a0e92f-30e1-7c73-93b2-c41ef9af326c",
+          "name": "Field notes",
+          "is_template": false,
+          "is_archived": false,
+          "settings": null
+        },
+        {
+          "depth": 2,
+          "kind": "page",
+          "id": "01a0e92f-30e2-7b82-9fe1-18961e750ed5",
+          "name": "Site visit",
+          "is_template": false,
+          "is_archived": false,
+          "settings": null
+        }
+      ],
+      "pages": {
+        "01a0e92f-30e2-7b82-9fe1-18961e750ed5": {
+          "canvases": [
+            {
+              "id": "01a0e92f-30f2-7e00-a607-4a61503d78bc",
+              "kind": "rich_text",
+              "source_hash": "a08c69405cee37e0daa8cbc60d66009bd8d14e964f6870433981de248ddc1995",
+              "x": 40,
+              "y": 40,
+              "width": 400,
+              "height": 120,
+              "z_index": 0,
+              "z_minor": 0,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {},
+              "content": {
+                "doc": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "align": "left"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Observations from the visit."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "01a0e92f-30fd-7a50-88d1-e4d146c2cfd2",
+              "kind": "picture",
+              "source_hash": "e4153f382e250ba2ca62ed705f7b962419e9083bf5a46a6d337e0427748bfe33",
+              "x": 480,
+              "y": 40,
+              "width": 160,
+              "height": 160,
+              "z_index": 0,
+              "z_minor": 1,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {},
+              "content": {
+                "strokes": null
+              }
+            },
+            {
+              "id": "01a0e92f-3107-7fd1-a731-36b8109b8bae",
+              "kind": "database",
+              "source_hash": "5c587aa5819695244ec8ab1148e4893d3b2be1b84424c955c8fe716bc70ea47a",
+              "x": 40,
+              "y": 200,
+              "width": 420,
+              "height": 180,
+              "z_index": 0,
+              "z_minor": 2,
+              "group_id": null,
+              "lifecycle": "active",
+              "lifecycle_reason": null,
+              "lifecycle_note": null,
+              "settings": {},
+              "content": {
+                "dataset_id": "01a0e92f-3108-7d42-9c51-567c98b3ba65",
+                "shape": "table",
+                "source_kind": "csv",
+                "row_count": 3,
+                "columns": [
+                  {
+                    "col_key": "c0",
+                    "name": "Task",
+                    "type_hint": "text",
+                    "position": 0
+                  },
+                  {
+                    "col_key": "c1",
+                    "name": "Owner",
+                    "type_hint": "text",
+                    "position": 1
+                  },
+                  {
+                    "col_key": "c2",
+                    "name": "Hours",
+                    "type_hint": "number",
+                    "position": 2
+                  },
+                  {
+                    "col_key": "c3",
+                    "name": "Done",
+                    "type_hint": "boolean",
+                    "position": 3
+                  }
+                ],
+                "rows": [
+                  {
+                    "id": "01a0e92f-3108-7d42-9c51-56cbcdf94671",
+                    "seq": 0,
+                    "cells": {
+                      "c0": "Draft the outline",
+                      "c1": "Ada",
+                      "c2": 3,
+                      "c3": true
+                    }
+                  },
+                  {
+                    "id": "01a0e92f-3108-7d42-9c51-56d9d8ce4348",
+                    "seq": 1,
+                    "cells": {
+                      "c0": "Collect sources",
+                      "c1": "Grace",
+                      "c2": 5.5,
+                      "c3": false
+                    }
+                  },
+                  {
+                    "id": "01a0e92f-3108-7d42-9c51-56eab012b0f0",
+                    "seq": 2,
+                    "cells": {
+                      "c0": "Review with the team",
+                      "c1": "Linus",
+                      "c2": 1,
+                      "c3": false
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "groups": []
+        }
+      },
+      "tags": [
+        {
+          "id": "01a0e92f-310a-7880-8314-154e85926b75",
+          "name": "Café",
+          "name_folded": "cafe",
+          "aliases": [
+            "Coffee"
+          ]
+        },
+        {
+          "id": "01a0e92f-310a-7880-8314-1524d8fa160d",
+          "name": "Project Alpha",
+          "name_folded": "project alpha",
+          "aliases": [
+            "alpha"
+          ]
+        },
+        {
+          "id": "01a0e92f-310b-7363-b051-aedd3f7024a6",
+          "name": "Urgent",
+          "name_folded": "urgent",
+          "aliases": []
+        }
+      ],
+      "item_tags": [
+        {
+          "source_kind": "node",
+          "source_id": "01a0e92f-30e2-7b82-9fe1-18961e750ed5",
+          "tags": [
+            "Project Alpha"
+          ]
+        },
+        {
+          "source_kind": "instance",
+          "source_id": "01a0e92f-30f2-7e00-a607-4a61503d78bc",
+          "tags": [
+            "Café"
+          ]
+        },
+        {
+          "source_kind": "instance",
+          "source_id": "01a0e92f-30fd-7a50-88d1-e4d146c2cfd2",
+          "tags": [
+            "Project Alpha"
+          ]
+        },
+        {
+          "source_kind": "dataset",
+          "source_id": "01a0e92f-3108-7d42-9c51-567c98b3ba65",
+          "tags": [
+            "Urgent"
+          ]
+        },
+        {
+          "source_kind": "dataset_row",
+          "source_id": "01a0e92f-3108-7d42-9c51-56cbcdf94671",
+          "tags": [
+            "Urgent"
+          ]
+        }
+      ],
+      "meta": [
+        {
+          "source_kind": "node",
+          "source_id": "01a0e92f-30e2-7b82-9fe1-18961e750ed5",
+          "key": "vendor",
+          "value_text": "Example Surveys",
+          "value_num": null,
+          "value_num2": null,
+          "source": "user"
+        },
+        {
+          "source_kind": "instance",
+          "source_id": "01a0e92f-30fd-7a50-88d1-e4d146c2cfd2",
+          "key": "capture_time",
+          "value_text": "2026-01-05T08:00:00Z",
+          "value_num": 1767600000.0,
+          "value_num2": null,
+          "source": "user"
+        },
+        {
+          "source_kind": "instance",
+          "source_id": "01a0e92f-30fd-7a50-88d1-e4d146c2cfd2",
+          "key": "geo",
+          "value_text": null,
+          "value_num": 51.5007,
+          "value_num2": -0.1246,
+          "source": "user"
+        },
+        {
+          "source_kind": "instance",
+          "source_id": "01a0e92f-30fd-7a50-88d1-e4d146c2cfd2",
+          "key": "place",
+          "value_text": "Westminster",
+          "value_num": null,
+          "value_num2": null,
+          "source": "user"
+        }
+      ]
+    }
+  }
+}

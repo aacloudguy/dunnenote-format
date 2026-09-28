@@ -16,12 +16,12 @@ editable.
 | --- | --- |
 | Canonical schema (`schema/v18.sql`), generated from DunneNote | available |
 | Library: open, version gate, read every canvas kind, tags, blobs; verify | available (pre-release) |
+| Library: export to JSON, Markdown and CSV | available (pre-release) |
 | Library: write every canvas kind | planned |
-| `dnfmt inspect`, `ls`, `cat`, `verify` | available (pre-release) |
-| `dnfmt export` (Markdown, JSON, CSV) | planned |
+| `dnfmt inspect`, `ls`, `cat`, `verify`, `export` | available (pre-release) |
 | `dnfmt new`, `add-*`, `tag`, `archive`, `form submit` | planned |
 | `SPEC.md` — full specification with a writer checklist | in progress |
-| Golden test notebooks produced by DunneNote itself | planned |
+| Golden test notebooks produced by DunneNote itself ([fixtures](fixtures/README.md)) | available |
 
 ## Try it
 
@@ -31,16 +31,31 @@ cargo build --release
 ./target/release/dnfmt ls ~/Notes/Research.dunnenote
 ./target/release/dnfmt cat ~/Notes/Research.dunnenote <page-or-canvas-id>
 ./target/release/dnfmt verify ~/Notes/Research.dunnenote --full
+
+# Readable copies (the output folder must be new or empty; nothing is overwritten)
+./target/release/dnfmt export --md   ~/Notes/Research.dunnenote ~/Desktop/Research-md
+./target/release/dnfmt export --csv  ~/Notes/Research.dunnenote ~/Desktop/Research-csv
+./target/release/dnfmt export --json ~/Notes/Research.dunnenote ~/Desktop/Research.json
 ```
 
+- **Markdown**: one `.md` file per page, in folders named after your sections, with pictures
+  copied out and sketches drawn as SVG. Archived content is left out unless you add
+  `--include-archived`.
+- **CSV**: one file per table and one per calendar.
+- **JSON**: everything in the notebook as one document (pictures and files are referenced by
+  their SHA-256, not embedded). The document shape is versioned (`export_version`).
+
 `dnfmt` opens notebooks read-only and never takes DunneNote's lock, so it is safe to run while
-the notebook is open in DunneNote.
+the notebook is open in DunneNote. It changes nothing in the notebook. Like any SQLite reader, it
+may leave the database's two standard companion files, `notebook.db-wal` (empty) and
+`notebook.db-shm`, which DunneNote itself creates whenever it opens the notebook.
 
 ## Supported versions
 
 This library reads and writes notebooks at **schema 18** (`format_version` `0.18.0`). Notebooks
-from newer DunneNote releases open read-only (one version ahead) or are refused; older notebooks
-open read-only and should be opened once in DunneNote to upgrade.
+from newer DunneNote releases open read-only (one version ahead) or are refused. Older notebooks
+are refused with a message to open them once in DunneNote, which upgrades them; this library never
+upgrades a notebook itself.
 
 ## Licence
 

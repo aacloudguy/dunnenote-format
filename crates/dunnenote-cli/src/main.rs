@@ -2,9 +2,13 @@
 
 use std::process::ExitCode;
 
+use std::path::Path;
+
 use dunnenote_format::{
-    text::plain_text, verify, CanvasKind, Error, Node, NodeKind, Notebook, Severity, VerifyLevel,
-    FORMAT_VERSION, SCHEMA_VERSION,
+    export,
+    text::{plain_text, utc_date, utc_datetime},
+    verify, CanvasKind, Error, Node, NodeKind, Notebook, Severity, VerifyLevel, FORMAT_VERSION,
+    SCHEMA_VERSION,
 };
 use serde_json::json;
 
@@ -18,9 +22,17 @@ USAGE:
     dnfmt verify <notebook> [--full] [--json] [--strict]
                                            Check for damage (exit 1 on errors;
                                            --strict also fails on warnings)
+    dnfmt export --md <notebook> <folder> [--include-archived]
+                                           Markdown files, pictures and sketches
+    dnfmt export --csv <notebook> <folder> [--include-archived]
+                                           One CSV file per table and calendar
+    dnfmt export --json <notebook> [<file>]
+                                           Everything, as one JSON document
+                                           (to standard output without <file>)
     dnfmt --version
 
-Notebooks are opened read-only; dnfmt never changes them.";
+Notebooks are opened read-only; dnfmt never changes them. Exports never
+overwrite: the output folder must be new or empty, the output file new.";
 
 struct Args {
     positional: Vec<String>,
@@ -46,11 +58,12 @@ fn main() -> ExitCode {
         );
         return ExitCode::SUCCESS;
     }
-    if let Some(unknown) = args
-        .flags
-        .iter()
-        .find(|f| !matches!(f.as_str(), "--json" | "--full" | "--strict" | "--help"))
-    {
+    if let Some(unknown) = args.flags.iter().find(|f| {
+        !matches!(
+            f.as_str(),
+            "--json" | "--full" | "--strict" | "--help" | "--md" | "--csv" | "--include-archived"
+        )
+    }) {
         eprintln!("dnfmt: unknown option {unknown}\n\n{USAGE}");
         return ExitCode::from(2);
     }
@@ -59,6 +72,9 @@ fn main() -> ExitCode {
         ["inspect", path] => inspect(path, args.flag("--json")),
         ["ls", path] => ls(path, args.flag("--json")),
         ["cat", path, id] => cat(path, id),
+        ["export", path, rest @ ..] if rest.len() <= 1 => {
+            export_cmd(&args, path, rest.first().copied())
+        }
         ["verify", path] => {
             return verify_cmd(
                 path,
@@ -273,6 +289,67 @@ fn cat_canvas(nb: &Notebook, id: &str, standalone: bool) -> Result<(), Error> {
     Ok(())
 }
 
+fn export_cmd(args: &Args, path: &str, out: Option<&str>) -> Result<(), Error> {
+    let chosen: Vec<&str> = ["--md", "--csv", "--json"]
+        .into_iter()
+        .filter(|f| args.flag(f))
+        .collect();
+    let opts = export::Options {
+        include_archived: args.flag("--include-archived"),
+    };
+    let usage = || {
+        Error::Io(std::io::Error::other(format!(
+            "choose one of --md, --csv or --json\n\n{USAGE}"
+        )))
+    };
+    let nb = Notebook::open(path)?;
+    match (chosen.as_slice(), out) {
+        (["--json"], None) => {
+            let doc = export::to_json(&nb)?;
+            println!("{}", serde_json::to_string_pretty(&doc).unwrap_or_default());
+            Ok(())
+        }
+        (["--json"], Some(file)) => {
+            let doc = export::to_json(&nb)?;
+            let text = serde_json::to_string_pretty(&doc).unwrap_or_default() + "\n";
+            std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(file)
+                .and_then(|mut f| std::io::Write::write_all(&mut f, text.as_bytes()))?;
+            eprintln!("wrote {file}");
+            Ok(())
+        }
+        ([kind @ ("--md" | "--csv")], Some(folder)) => {
+            let summary = if *kind == "--md" {
+                export::to_markdown(&nb, Path::new(folder), opts)?
+            } else {
+                export::to_csv(&nb, Path::new(folder), opts)?
+            };
+            let mut parts = vec![
+                format!("{} pages", summary.pages),
+                format!("{} tables", summary.tables),
+            ];
+            if summary.calendars > 0 {
+                parts.push(format!("{} calendars", summary.calendars));
+            }
+            if summary.skipped_archived > 0 {
+                parts.push(format!(
+                    "{} archived items skipped",
+                    summary.skipped_archived
+                ));
+            }
+            eprintln!(
+                "wrote {} files to {folder} ({})",
+                summary.files.len(),
+                parts.join(", ")
+            );
+            Ok(())
+        }
+        _ => Err(usage()),
+    }
+}
+
 fn verify_cmd(path: &str, full: bool, as_json: bool, strict: bool) -> ExitCode {
     let nb = match Notebook::open(path) {
         Ok(nb) => nb,
@@ -335,40 +412,5 @@ fn human_bytes(n: i64) -> String {
         format!("{:.1} KB", n / 1024.0)
     } else {
         format!("{:.1} MB", n / 1024.0 / 1024.0)
-    }
-}
-
-/// Civil date from days since 1970-01-01 (Howard Hinnant's algorithm).
-fn civil(days: i64) -> (i64, u32, u32) {
-    let z = days + 719_468;
-    let era = z.div_euclid(146_097);
-    let doe = z.rem_euclid(146_097);
-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;
-    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;
-    (yoe + era * 400 + i64::from(m <= 2), m, d)
-}
-
-fn utc_date(secs: i64) -> String {
-    let (y, m, d) = civil(secs.div_euclid(86_400));
-    format!("{y:04}-{m:02}-{d:02}")
-}
-
-fn utc_datetime(secs: i64) -> String {
-    let s = secs.rem_euclid(86_400);
-    format!("{} {:02}:{:02}Z", utc_date(secs), s / 3600, (s % 3600) / 60)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn dates() {
-        assert_eq!(utc_date(0), "1970-01-01");
-        assert_eq!(utc_datetime(1_758_000_000), "2025-09-16 05:20Z");
-        assert_eq!(utc_date(951_782_400), "2000-02-29");
     }
 }

@@ -1,3 +1,6 @@
 target/
-*.dunnenote/.dunnenote.lock
 .DS_Store
+# Created by DunneNote when it opens a notebook, and by SQLite for any reader of a WAL database.
+**/*.dunnenote/.dunnenote.lock
+**/*.dunnenote/notebook.db-wal
+**/*.dunnenote/notebook.db-shm

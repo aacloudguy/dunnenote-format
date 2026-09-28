@@ -13,9 +13,11 @@
 //! # Ok::<(), dunnenote_format::Error>(())
 //! ```
 //!
-//! **Status:** pre-release. Reading is available; writing lands in a later release.
+//! **Status:** pre-release. Reading and exporting (JSON, Markdown, CSV) are available; writing
+//! lands in a later release.
 
 pub mod error;
+pub mod export;
 pub mod gate;
 pub mod manifest;
 pub mod model;

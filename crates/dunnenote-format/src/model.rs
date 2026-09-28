@@ -289,6 +289,8 @@ pub struct Group {
 pub struct Tag {
     pub id: String,
     pub name: String,
+    /// The name folded by fold v1 (the tag's identity: two names that fold alike are one tag).
+    pub name_folded: String,
     pub color: Option<String>,
     pub description: Option<String>,
     pub aliases: Vec<String>,

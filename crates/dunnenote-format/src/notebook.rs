@@ -497,8 +497,9 @@ impl Notebook {
                 Ok(Tag {
                     id: r.get(0)?,
                     name: r.get(1)?,
-                    color: r.get(2)?,
-                    description: r.get(3)?,
+                    name_folded: r.get(2)?,
+                    color: r.get(3)?,
+                    description: r.get(4)?,
                     aliases: Vec::new(),
                 })
             })?
@@ -517,7 +518,7 @@ impl Notebook {
     /// Every tag in the notebook, with its aliases.
     pub fn tags(&self) -> Result<Vec<Tag>> {
         self.tags_query(
-            "SELECT id, name, color, description FROM tags ORDER BY name_folded",
+            "SELECT id, name, name_folded, color, description FROM tags ORDER BY name_folded",
             &[],
         )
     }
@@ -525,7 +526,7 @@ impl Notebook {
     /// Tags on one item. `source_kind` is `node`, `canvas`, `instance`, `dataset` or `dataset_row`.
     pub fn tags_of(&self, source_kind: &str, source_id: &str) -> Result<Vec<Tag>> {
         self.tags_query(
-            "SELECT t.id, t.name, t.color, t.description FROM item_tags it \
+            "SELECT t.id, t.name, t.name_folded, t.color, t.description FROM item_tags it \
              JOIN tags t ON t.id = it.tag_id \
              WHERE it.source_kind = ?1 AND it.source_id = ?2 ORDER BY t.name_folded",
             &[source_kind, source_id],
