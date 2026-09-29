@@ -155,7 +155,7 @@ dependencies = [
 
 [[package]]
 name = "dunnenote-cli"
-version = "0.1.0-dev"
+version = "0.1.0"
 dependencies = [
  "dunnenote-format",
  "serde_json",
@@ -164,7 +164,7 @@ dependencies = [
 
 [[package]]
 name = "dunnenote-format"
-version = "0.1.0-dev"
+version = "0.1.0"
 dependencies = [
  "csv",
  "flate2",

@@ -8,24 +8,44 @@ folders on your disk: a SQLite database, a content-addressed blob store, and a s
 This project exists so that your notes never depend on one application to stay readable or
 editable.
 
-> **Status: pre-release.** The format is published as **DunneNote Format 0.18 — draft**. It will
-> be frozen as 1.0 when DunneNote reaches 1.0. Until then every change is versioned and listed in
-> the changelog, and this library states exactly which versions it supports.
+> **Status: 0.1.0, the first release.** The format is published as **DunneNote Format 0.18 —
+> draft**. It will be frozen as 1.0 when DunneNote reaches 1.0. Until then every format change is
+> versioned and listed in [SPEC.md §14](SPEC.md#14-versioning-and-changelog), every library
+> change in [CHANGELOG.md](CHANGELOG.md), and this library states exactly which versions it
+> supports.
 
 | Piece | Status |
 | --- | --- |
 | Canonical schema (`schema/v18.sql`), generated from DunneNote | available |
-| Library: open, version gate, read every canvas kind, tags, blobs; verify | available (pre-release) |
-| Library: export to JSON, Markdown and CSV | available (pre-release) |
-| Library: create notebooks; write sections, pages, rich text, sketches, pictures, picture markup, canvas groups | available (pre-release) |
-| Library: write tables (import CSV/JSON, blank Editable tables, edit rows and columns) | available (pre-release) |
-| Library: forms (fields, new form, submit to an answers table with carriers), captions, page settings | available (pre-release) |
-| Library: templates (make, new from), archive and retrieve (with `.archive/` snapshots), tags, aliases, metadata | available (pre-release) |
-| Library: calendars (`.ics` import with events and attendees, as DunneNote reads them) | available (pre-release) |
-| `dnfmt inspect`, `ls`, `cat`, `verify`, `export` | available (pre-release) |
-| `dnfmt new`, `add-section`, `add-page`, `add-canvas rich-text\|sketch\|picture\|table\|calendar`, `table`, `form`, `caption`, `template`, `archive`, `retrieve`, `tag`, `meta` | available (pre-release) |
+| Library: open, version gate, read every canvas kind, tags, blobs; verify | available |
+| Library: export to JSON, Markdown and CSV | available |
+| Library: create notebooks; write sections, pages, rich text, sketches, pictures, picture markup, canvas groups | available |
+| Library: write tables (import CSV/JSON, blank Editable tables, edit rows and columns) | available |
+| Library: forms (fields, new form, submit to an answers table with carriers), captions, page settings | available |
+| Library: templates (make, new from), archive and retrieve (with `.archive/` snapshots), tags, aliases, metadata | available |
+| Library: calendars (`.ics` import with events and attendees, as DunneNote reads them) | available |
+| `dnfmt inspect`, `ls`, `cat`, `verify`, `export` | available |
+| `dnfmt new`, `add-section`, `add-page`, `add-canvas rich-text\|sketch\|picture\|table\|calendar`, `table`, `form`, `caption`, `template`, `archive`, `retrieve`, `tag`, `meta` | available |
 | `SPEC.md` — the full specification, with a writer checklist | available (0.18 draft) |
 | Golden test notebooks produced by DunneNote itself ([fixtures](fixtures/README.md)) | available |
+
+## Install
+
+You need Rust ([rustup.rs](https://rustup.rs)); `rust-toolchain.toml` pins the version, and
+rustup fetches it on first build.
+
+```sh
+git clone https://github.com/aacloudguy/dunnenote-format.git
+cd dunnenote-format
+cargo install --locked --path crates/dunnenote-cli    # puts dnfmt in ~/.cargo/bin
+```
+
+To use the library from Rust:
+
+```toml
+[dependencies]
+dunnenote-format = { git = "https://github.com/aacloudguy/dunnenote-format", tag = "v0.1.0" }
+```
 
 ## Try it
 
