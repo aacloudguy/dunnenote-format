@@ -434,3 +434,88 @@ mod tests {
         assert!(check_page_patch(&obj(json!({"formFillMode": false, "other": 3}))).is_ok());
     }
 }
+
+#[cfg(test)]
+mod properties {
+    use super::*;
+    use proptest::prelude::*;
+
+    /// Keys DunneNote does not know: lowercase only, so never one of the camelCase page keys.
+    fn unknown_settings() -> impl Strategy<Value = Settings> {
+        let value = prop_oneof![
+            any::<bool>().prop_map(Value::Bool),
+            any::<i32>().prop_map(|n| json!(n)),
+            "[a-z]{0,6}".prop_map(Value::String),
+        ];
+        prop::collection::vec(("[a-z]{1,6}", value), 0..6).prop_map(|kv| kv.into_iter().collect())
+    }
+
+    fn known_patch() -> impl Strategy<Value = Settings> {
+        let entry = prop_oneof![
+            prop::sample::select(vec![
+                "hideCanvasFrames",
+                "formFillMode",
+                "hideSubmittedColumn"
+            ])
+            .prop_flat_map(|k| (
+                Just(k),
+                prop_oneof![Just(json!(true)), Just(json!(false)), Just(Value::Null)]
+            )),
+            (
+                Just("dateDisplayFormat"),
+                prop::sample::select(vec!["iso", "dmy", "mdy", "numeric-dmy", "numeric-mdy"])
+                    .prop_map(|f| json!(f)),
+            ),
+            (
+                Just("formLabelDisplay"),
+                prop::sample::select(vec!["off", "hover", "above", "below"]).prop_map(|f| json!(f))
+            ),
+            (
+                Just("formTabOrder"),
+                prop::collection::vec("[a-f0-9]{4}", 1..4).prop_map(|v| json!(v))
+            ),
+        ];
+        prop::collection::vec(entry, 0..5)
+            .prop_map(|kv| kv.into_iter().map(|(k, v)| (k.to_string(), v)).collect())
+    }
+
+    proptest! {
+        #[test]
+        fn unknown_keys_survive_and_the_patch_wins(
+            stored in unknown_settings(),
+            patch_unknown in unknown_settings(),
+            patch_known in known_patch(),
+        ) {
+            let mut patch = patch_unknown.clone();
+            patch.extend(patch_known.clone());
+            prop_assert!(check_page_patch(&patch).is_ok());
+            let out = merge_page(Some(&stored), &patch).unwrap_or_default();
+            for (k, v) in &stored {
+                if !patch.contains_key(k) {
+                    prop_assert_eq!(out.get(k), Some(v), "stored key {} was lost", k);
+                }
+            }
+            for (k, v) in &patch_unknown {
+                prop_assert_eq!(out.get(k), Some(v));
+            }
+            for (k, v) in &patch_known {
+                let default = v.is_null() || *v == json!(false);
+                prop_assert_eq!(out.contains_key(k), !default, "{} = {}", k, v);
+            }
+            // Unknown keys come first, in stored-then-patch order; known keys after.
+            let first_known = out.keys().position(|k| PAGE_KEYS.contains(&k.as_str()));
+            if let Some(i) = first_known {
+                prop_assert!(out.keys().skip(i).all(|k| PAGE_KEYS.contains(&k.as_str())));
+            }
+        }
+
+        #[test]
+        fn merging_is_idempotent(stored in unknown_settings(), patch in known_patch()) {
+            let once = merge_page(Some(&stored), &patch);
+            let twice = merge_page(once.as_ref(), &patch);
+            prop_assert_eq!(&twice, &once);
+            // And a merged object is a fixed point of an empty patch.
+            prop_assert_eq!(merge_page(once.as_ref(), &Settings::new()), once);
+        }
+    }
+}
