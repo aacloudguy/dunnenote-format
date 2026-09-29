@@ -24,7 +24,7 @@ editable.
 | Library: calendars (`.ics` import with events and attendees, as DunneNote reads them) | available (pre-release) |
 | `dnfmt inspect`, `ls`, `cat`, `verify`, `export` | available (pre-release) |
 | `dnfmt new`, `add-section`, `add-page`, `add-canvas rich-text\|sketch\|picture\|table\|calendar`, `table`, `form`, `caption`, `template`, `archive`, `retrieve`, `tag`, `meta` | available (pre-release) |
-| `SPEC.md` — full specification with a writer checklist | in progress |
+| `SPEC.md` — the full specification, with a writer checklist | available (0.18 draft) |
 | Golden test notebooks produced by DunneNote itself ([fixtures](fixtures/README.md)) | available |
 
 ## Try it

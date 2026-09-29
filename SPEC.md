@@ -1,26 +1,174 @@
 # DunneNote Format 0.18 — draft
 
-> **Draft.** This document is being written from DunneNote's implementation. Sections marked
-> *(to be written)* are not yet normative. The schema in `schema/v18.sql` already is.
+> **Draft.** This is a 0.x draft, written from DunneNote's implementation. It is normative for
+> notebooks at schema 18, and it may change in later 0.x versions (§14). It becomes 1.0 when
+> DunneNote reaches 1.0.
 
 The key words MUST, MUST NOT, SHOULD and MAY are to be interpreted as described in RFC 2119.
 
-1. Scope and conformance — Reader and Writer levels *(to be written)*
-2. Bundle layout: `format.json`, `notebook.db`, `blobs/`, `attachments/`, `.settings/`, `.state/`,
-   `.archive/`, the lock file, and which parts are durable *(to be written)*
-3. SQLite profile: required PRAGMAs, WAL, the version gate *(to be written)*
-4. Schema: `schema/v18.sql` is normative; table-by-table semantics *(to be written)*
-5. Identifiers, sibling positions, timestamps — [below](#5-identifiers-sibling-positions-timestamps)
-6. Blobs: addressing, sentinel blobs, reference counts — [below](#6-blobs)
-7. Canvases: settings merge rule and reserved settings keys — [below](#7-canvas-and-page-settings)
-8. Payloads: rich text and sketch [below](#8-payloads-rich-text-and-sketch); tables
-   [below](#tables); calendars [below](#calendars)
-9. Roles: captions, forms and templates — [below](#9-roles-captions-forms-and-templates)
-10. Groups, layering, archive — [below](#10-groups-layering-archive)
-11. Tags and metadata, fold v1 — [below](#11-tags-and-metadata-fold-v1)
-12. The search index as a derived cache *(to be written)*
-13. Writer checklist — [below](#13-writer-checklist)
-14. Versioning policy and changelog *(to be written)*
+1. [Scope and conformance](#1-scope-and-conformance)
+2. [Bundle layout](#2-bundle-layout)
+3. [SQLite profile and the version gate](#3-sqlite-profile-and-the-version-gate)
+4. [Schema](#4-schema)
+5. [Identifiers, sibling positions, timestamps](#5-identifiers-sibling-positions-timestamps)
+6. [Blobs](#6-blobs)
+7. [Canvas and page settings](#7-canvas-and-page-settings)
+8. [Payloads: rich text and sketch](#8-payloads-rich-text-and-sketch), [tables](#tables),
+   [calendars](#calendars)
+9. [Roles: captions, forms and templates](#9-roles-captions-forms-and-templates)
+10. [Groups, layering, archive](#10-groups-layering-archive)
+11. [Tags and metadata, fold v1](#11-tags-and-metadata-fold-v1)
+12. [The search index](#12-the-search-index)
+13. [Writer checklist](#13-writer-checklist)
+14. [Versioning and changelog](#14-versioning-and-changelog)
+
+## 1. Scope and conformance
+
+This document describes a DunneNote notebook on disk: a `.dunnenote` folder (§2) holding a SQLite
+database (§3, §4), a content-addressed blob store (§6) and a manifest. It is enough to read
+every notebook DunneNote writes at schema 18 and to change one so that DunneNote opens it with no
+loss. It does not describe DunneNote's user interface, sync, backup or encryption.
+
+There are two levels of conformance:
+
+- **Reader.** A Reader opens the database read-only, does not take the notebook's lock (§2), and
+  so MAY run while DunneNote has the notebook open. It MUST apply the version gate (§3). It MUST
+  ignore columns, settings keys, files and folders that it does not know, and MUST NOT treat the
+  search index (§12) as content. It SHOULD show archived content (§10) as archived, or leave it
+  out, rather than as live content, and MUST NOT treat form carriers (§9) as orphans.
+- **Writer.** A Writer is a Reader that also changes notebooks or creates them. It MUST follow
+  every rule in §2–§12, and all of them are gathered in the [Writer checklist](#13-writer-checklist).
+  A new notebook is created with the schema in §4, `PRAGMA user_version = 18`, a single notebook
+  root node, and the manifest described in §2.
+
+The notebooks in `fixtures/` were produced by DunneNote itself and are part of this
+specification: a Reader MUST read each one as `fixtures/expected.json` describes. A Writer's
+output is conforming when DunneNote opens it, finds nothing to repair, and reads back what was
+written.
+
+## 2. Bundle layout
+
+A notebook is a folder, conventionally named `<name>.dunnenote`. The folder's name is not the
+notebook's name (that is the root node's `name`, §4).
+
+| Path | What it is | Durable |
+| --- | --- | --- |
+| `format.json` | The manifest (below) | yes |
+| `notebook.db` | The SQLite database (§3, §4) | yes |
+| `blobs/sha256/…` | Pictures, imported files and sentinels, addressed by hash (§6) | yes |
+| `attachments/<ext>/…` | Files written by forms whose destination is a file (§9) | yes |
+| `.settings/settings.json` | Per-notebook preferences | yes |
+| `.state/` | This computer's view state, such as the last selected page | no |
+| `.archive/` | Snapshots taken when archiving (§10) | no; a copy of rows in the database |
+| `notebook.db.bak-v<N>` | DunneNote's copy of the database before an upgrade from schema N | no |
+| `notebook.db-wal`, `notebook.db-shm` | SQLite's companion files | temporary |
+| `.dunnenote.lock` | The lock file (below) | no |
+
+"Durable" parts are the notebook: a copy of a notebook MUST include them. The others may be left
+out of a copy. Readers MUST NOT rely on `.state/`, whose contents change between DunneNote
+releases, and Writers MUST NOT change it.
+
+- **`format.json`** is a JSON object with exactly these fields:
+  - `format`: always `"dunnenote"`;
+  - `format_version`: the version the notebook was *created* at, `"0.<schema>.0"`, for example
+    `"0.18.0"`;
+  - `notebook_id`: the notebook's permanent identity, a UUID (§5), unchanged when the folder is
+    moved or renamed;
+  - `created_at`: Unix seconds;
+  - `created_by`: the software that created it, `<name>/<version>`.
+
+  It is written once, when the notebook is created, and never changed afterwards: the schema a
+  notebook is at *now* is `PRAGMA user_version` (§3). A Writer creating a notebook writes it to a
+  temporary file in the folder, syncs it, and renames it into place without replacing an existing
+  file.
+- **`.settings/settings.json`** is `{"schema_version":1,"payload":{…}}`. The payload holds
+  per-notebook preferences, such as whether a new page starts with a heading. Readers MAY
+  ignore it. Writers MUST NOT change it.
+- **`attachments/<ext>/`** holds files named by DunneNote, lowercased, grouped by extension. At
+  schema 18 the only such files are form answers, `attachments/<ext>/form-answers-<page id>.<ext>`
+  (`ext` is `json`, `md` or `csv`). Writers MUST NOT change or delete them.
+- **The lock file.** `.dunnenote.lock` is an empty file. The process that has the notebook open
+  for writing holds an exclusive advisory lock on it (`flock` on Unix, `LockFileEx` on Windows).
+  The lock, not the file, is what matters: the file stays after the notebook closes and MUST NOT
+  be deleted. A Reader MAY probe the lock to tell the user that DunneNote has the notebook open;
+  it MUST NOT create the file to do so.
+
+## 3. SQLite profile and the version gate
+
+- **The database** is SQLite 3 in WAL mode (`journal_mode=WAL`). Every table is `STRICT`
+  (§4), and some checks use the JSON functions, so SQLite 3.38 or later is required.
+- **Writer connections** MUST set `journal_mode=WAL`, `foreign_keys=ON`,
+  `recursive_triggers=ON`, `synchronous=NORMAL` and `busy_timeout=5000` on every connection. They
+  MUST confirm `recursive_triggers` is on before each write, because the reference counts in §6
+  depend on it.
+- **Reader connections** SHOULD open the database read-only (`SQLITE_OPEN_READ_ONLY`, and
+  `PRAGMA query_only=ON`) with a busy timeout. Opening a WAL database read-only may still leave
+  an empty `notebook.db-wal` and a `notebook.db-shm` behind. DunneNote creates the same files and
+  they are harmless.
+- **The version gate.** `PRAGMA user_version` is the notebook's schema version. This document is
+  schema **18**.
+
+  | `user_version` | Reader | Writer |
+  | --- | --- | --- |
+  | 18 | reads | writes |
+  | 19 | reads, ignoring columns and tables it does not know | MUST NOT write |
+  | 20 or more | MUST refuse | MUST refuse |
+  | less than 18 | MUST refuse; DunneNote upgrades it when it next opens the notebook | MUST refuse, and MUST NOT upgrade it |
+
+  A Reader that refuses SHOULD say why: newer notebooks need a newer reader, and older ones need
+  to be opened once in DunneNote.
+- **The manifest gate.** A Reader MUST refuse a notebook whose `format.json` is missing or is
+  not valid JSON, whose `format` is not `"dunnenote"`, or whose `format_version` is not a
+  version number of three or more dot-separated parts with a major version of 0. A notebook whose
+  `format_version` is older than `user_version` is normal: it was created at that version and
+  upgraded since.
+- **Before the first write,** a Writer takes the lock (§2), reads `user_version` again while
+  holding it, and runs `PRAGMA quick_check` (which must return `ok`) and
+  `PRAGMA foreign_key_check` (which must return nothing). It MUST refuse a notebook that fails
+  any of these. Each change is then one `BEGIN IMMEDIATE` transaction (§13).
+
+## 4. Schema
+
+`schema/v18.sql` is normative. It is generated from a notebook freshly created by DunneNote, and
+its SHA-256 is `dcead3a7cff689b43691fc41d2ab4611ce3355d7a2b8f37152e8b7b95186a433`. A Writer
+creating a notebook MUST apply it unchanged, in one transaction, to an empty database, then set
+`PRAGMA user_version = 18`. Every table is `STRICT`, and there are no views. The column checks,
+foreign keys (most with `ON DELETE CASCADE`) and triggers in the file are part of the format; the
+sections below give their meaning.
+
+- **The tree** (`nodes`). Exactly one root, `kind = 'notebook'` with no parent, holds the
+  notebook's name. A section is `kind = 'group'` and sits under the notebook or another section.
+  A page is `kind = 'page'`, sits under either, and has no children. Siblings are ordered by
+  `position` (§5). `child_count` is kept by triggers. A page may be a template (`is_template`,
+  §9), may be archived (`is_archived` and the `archive_*` columns, §10) and may have page settings
+  (`settings`, §7).
+- **Canvases** (`canvas_instances`) are the things on a page: `kind` is `rich_text`, `sketch`,
+  `picture`, `calendar`, `database` (a Data Table) or `spreadsheet` (an Editable table). Each
+  has a frame in page pixels (`x`, `y`, `width`, `height`), a layer (`z_index`, `z_minor`, §10),
+  optional membership of a group (`group_id`), settings (§7), a lifecycle (`lifecycle` and the
+  `lifecycle_*` columns, §10), and a `source_hash`: the blob it was made from, or a sentinel
+  (§6). `source_hash` never changes after the row is inserted, and a trigger enforces this.
+  `schema_version` is 1.
+- **Canvas content** is in one table per kind:
+  - `rich_text_instances` and `sketch_instances`, keyed by canvas id (§8). A picture's markup is
+    also a `sketch_instances` row;
+  - `datasets`, `dataset_columns` and `dataset_rows` for tables ([Tables](#tables));
+  - `calendar_events` and `calendar_event_attendees` for calendars ([Calendars](#calendars));
+  - a picture's content is its source blob.
+- **Canvas groups** (`groups`), §10.
+- **Blobs** (`blobs`): one row per file in `blobs/`, with its `refcount` (§6). `deleted_at` is set
+  by trigger when the count reaches 0, and DunneNote reclaims such blobs later.
+- **Tags and metadata** (`tags`, `tag_aliases`, `item_tags`, `item_meta`), §11.
+- **The search index** (`search_index`, `search_index_fts`, `search_index_trgm`), §12.
+
+Triggers a Writer relies on:
+- `canvas_instances_after_insert` and `canvas_instances_after_delete` keep `blobs.refcount`
+  (§6);
+- `nodes_child_count_*` keep `child_count`;
+- `nodes_parent_kind_check_*` refuse a tree that breaks the rules above;
+- `search_index_after_*` keep the two FTS5 tables in step with `search_index`;
+- the `*_touch_updated_at` triggers set `updated_at` whenever a row changes and the statement
+  did not set it.
 
 ## 5. Identifiers, sibling positions, timestamps
 
@@ -214,8 +362,9 @@ that file once, when it is imported, and never re-derived. Deleting the canvas d
 
 ### Captions
 
-A caption is a Rich Text canvas whose settings carry `caption: {"anchor": <picture canvas id>,
-"placement": …}` and that is in the same canvas group as that picture. `placement` is `bottom`,
+A caption is a Rich Text canvas whose settings carry
+`caption: {"anchor": <picture canvas id>, "placement": …}` and that is in the same canvas group
+as that picture. `placement` is `bottom`,
 `top`, `corner-tl`, `corner-tr`, `corner-bl`, `corner-br`, `movie` or `user` (placed by hand).
 DunneNote adds one with `backgroundTransparent: true`, 48 px high across the bottom of the
 picture (inside its frame), on the layer above the picture (`max(top layer, picture z_index + 1)`),
@@ -304,11 +453,13 @@ A picture may have several captions.
   - Before marking the row, the writer stores a snapshot of the subtree at
     `.archive/<node id>.tar.gz` (folder mode 0700; written to a temporary file, synced, then
     renamed into place). It is a gzip (mtime 0, OS byte 255) tar of two regular members with
-    zeroed owners, mode 0644 and mtime 0: `manifest.json`
-    `{"format_version":1,"app":"dunnenote","checksum_algorithm":"sha256","root_node_id",
-    "entries":[{"path":"nodes.jsonl","size","sha256"}]}` and `nodes.jsonl`, one
-    `{"id","kind","parent_id","name","position","is_archived","is_template","created_at",
-    "updated_at"}` object per node of the subtree (as it was before archiving), sorted by id.
+    zeroed owners, mode 0644 and mtime 0:
+    - `manifest.json`, whose keys in order are `format_version` (1), `app` (`"dunnenote"`),
+      `checksum_algorithm` (`"sha256"`), `root_node_id` and `entries`, an array holding one
+      `{"path":"nodes.jsonl","size","sha256"}` object;
+    - `nodes.jsonl`, one object per node of the subtree (as it was before archiving), sorted by
+      id, with the keys `id`, `kind`, `parent_id`, `name`, `position`, `is_archived`,
+      `is_template`, `created_at` and `updated_at` in that order.
   - **Retrieving** clears the four columns and then deletes the snapshot if it reads back
     correctly; a damaged snapshot is left in place. Writers MUST NOT otherwise delete snapshots.
 - **Archiving a canvas** sets `lifecycle = 'archived'` with `lifecycle_reason`,
@@ -341,6 +492,24 @@ A picture may have several captions.
   `camera` (text). Every other key is text: `value_text` trimmed, 1–1000 characters, no NUL,
   with `value_folded` its fold. `source` is the provenance (`user`, `exif`, `enrich:<name>`; no
   whitespace, at most 64 characters).
+
+## 12. The search index
+
+- **A derived cache.** `search_index` holds one row per piece of searchable text (a node's name,
+  a canvas's text, a table cell or column, a calendar event, a caption, a tag, a metadata
+  value), identified by `(source_kind, source_id, field)`. `search_index_fts` (words, with
+  diacritics folded and prefixes of 2 and 3 characters) and `search_index_trgm` (trigrams) are
+  FTS5 external-content indexes over it, kept in step by triggers. All three are derived from
+  the rest of the database: they are not content. A Reader MUST NOT treat them as content and
+  SHOULD NOT rely on their exact rows, which may change between DunneNote releases.
+- **Rebuilding.** When DunneNote opens a notebook whose `search_index` is empty and which has
+  content, it rebuilds the whole index. It does **not** rebuild an index that has rows, even
+  rows that are out of date.
+- **Writers** therefore MUST empty the index (`DELETE FROM search_index`, which also empties the
+  FTS5 tables through the triggers) in the same transaction as any change, and MUST NOT write
+  index rows themselves. Until DunneNote next opens the notebook, search in DunneNote finds
+  nothing in it, and it then finds everything.
+- An empty index in a notebook with content is normal, not damage.
 
 ## 13. Writer checklist
 
@@ -381,3 +550,37 @@ A conforming **Writer**:
 `dunnenote-format` implements this checklist; its conformance suite includes notebooks it writes
 being opened by DunneNote's own code, health-checked with no findings, and read back field for
 field.
+
+## 14. Versioning and changelog
+
+- **Two numbers.** `PRAGMA user_version` is the schema a notebook is at now (§3). The
+  specification is named after it: "DunneNote Format 0.18" describes schema 18. `format.json`'s
+  `format_version` records the version a notebook was created at and is informational, apart
+  from its major version (§3).
+- **Draft until 1.0.** While DunneNote is before 1.0, the format is a 0.x draft. A DunneNote
+  release may raise the schema version. When it does, a new version of this document is
+  published with the new `schema/v<N>.sql` and a changelog entry listing every change a Reader
+  or Writer needs to know about. When DunneNote reaches 1.0, the format at that schema becomes
+  **DunneNote Format 1.0**, and from then on changes follow semantic versioning: a new major
+  version for a change that an older Reader cannot safely ignore.
+- **Tolerance.** A Reader for schema N reads schema N+1 (§3). DunneNote itself writes only its
+  own schema, and upgrades older notebooks when it opens them. It keeps the copy
+  `notebook.db.bak-v<N>` of the database first.
+- **Other versioned shapes**, each changed independently of the schema and only by raising
+  its number:
+
+  | Shape | Where | Version |
+  | --- | --- | --- |
+  | Canvas | `canvas_instances.schema_version`, `groups.schema_version` | 1 |
+  | Rich text and sketch payloads | `rich_text_instances.schema_version`, `sketch_instances.schema_version`; the sketch's own `"v"` | 1 |
+  | Table | `datasets.schema_version` | 1 |
+  | Archive snapshot | `manifest.json`'s `format_version` (§10) | 1 |
+  | Notebook preferences | `.settings/settings.json`'s `schema_version` (§2) | 1 |
+
+  A Reader that meets a higher number than it knows SHOULD treat that item as unreadable rather
+  than guess.
+
+### Changelog
+
+- **0.18 (draft)**: the first published version. It describes schema 18, the schema of
+  DunneNote 0.9.
