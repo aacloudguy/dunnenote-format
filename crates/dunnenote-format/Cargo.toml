@@ -24,6 +24,7 @@ csv = { workspace = true }
 tar = { workspace = true }
 flate2 = { workspace = true }
 icalendar = { workspace = true }
+semver = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

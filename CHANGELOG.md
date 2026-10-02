@@ -18,7 +18,8 @@ DunneNote 0.9.
 
 **Library (`dunnenote-format`)**
 - Open a notebook read-only with the version and manifest gates (schema 19 read-only; older
-  and newer refused), without taking DunneNote's lock.
+  and newer refused; `format_version` parsed as a semantic version, exactly as DunneNote parses
+  it), without taking DunneNote's lock.
 - Read the page tree and every canvas kind: rich text, sketches, pictures and their markup,
   Data Tables and Editable tables, calendars with events and attendees; canvas groups, captions,
   forms, templates, archive state, tags, aliases and metadata; blobs.
@@ -35,7 +36,7 @@ DunneNote 0.9.
   - write forms (fields, new form, submit to an answers table with carrier canvases), captions
     and page settings;
   - write templates (make, and new page from);
-  - archive and retrieve pages and canvases (with `.archive/` snapshots);
+  - archive and retrieve pages, sections, notebooks and canvases (with `.archive/` snapshots);
   - write tags, aliases, merges and metadata, folded with fold v1.
 
 **Command-line tool (`dnfmt`)**

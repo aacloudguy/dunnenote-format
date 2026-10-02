@@ -95,8 +95,8 @@ releases, and Writers MUST NOT change it.
 
 ## 3. SQLite profile and the version gate
 
-- **The database** is SQLite 3 in WAL mode (`journal_mode=WAL`). Every table is `STRICT`
-  (§4), and some checks use the JSON functions, so SQLite 3.38 or later is required.
+- **The database** is SQLite 3 in WAL mode (`journal_mode=WAL`). Every ordinary table is
+  `STRICT` (§4), and some checks use the JSON functions, so SQLite 3.38 or later is required.
 - **Writer connections** MUST set `journal_mode=WAL`, `foreign_keys=ON`,
   `recursive_triggers=ON`, `synchronous=NORMAL` and `busy_timeout=5000` on every connection. They
   MUST confirm `recursive_triggers` is on before each write, because the reference counts in §6
@@ -117,9 +117,12 @@ releases, and Writers MUST NOT change it.
 
   A Reader that refuses SHOULD say why: newer notebooks need a newer reader, and older ones need
   to be opened once in DunneNote.
-- **The manifest gate.** A Reader MUST refuse a notebook whose `format.json` is missing or is
-  not valid JSON, whose `format` is not `"dunnenote"`, or whose `format_version` is not a
-  version number of three or more dot-separated parts with a major version of 0. A notebook whose
+- **The manifest gate.** A Reader MUST refuse a notebook whose `format.json` is missing, is not
+  valid JSON, or lacks any of its five fields (§2); whose `format` is not `"dunnenote"`; or whose
+  `format_version` is not a semantic version (`major.minor.patch`, each a number without leading
+  zeros, optionally followed by `-pre-release` and `+build` parts, as semver.org 2.0 defines)
+  with a major version of 0. So `"0.18"`, `"0.18.0.1"` and `"0.x.y"` are refused. A Reader MAY
+  also refuse a `notebook_id` that is not 36 characters (§5). A notebook whose
   `format_version` is older than `user_version` is normal: it was created at that version and
   upgraded since.
 - **Before the first write,** a Writer takes the lock (§2), reads `user_version` again while
@@ -132,7 +135,8 @@ releases, and Writers MUST NOT change it.
 `schema/v18.sql` is normative. It is generated from a notebook freshly created by DunneNote, and
 its SHA-256 is `dcead3a7cff689b43691fc41d2ab4611ce3355d7a2b8f37152e8b7b95186a433`. A Writer
 creating a notebook MUST apply it unchanged, in one transaction, to an empty database, then set
-`PRAGMA user_version = 18`. Every table is `STRICT`, and there are no views. The column checks,
+`PRAGMA user_version = 18`. Every ordinary table is `STRICT` (the two FTS5 virtual tables of §12
+cannot be), and there are no views. The column checks,
 foreign keys (most with `ON DELETE CASCADE`) and triggers in the file are part of the format; the
 sections below give their meaning.
 
@@ -273,11 +277,24 @@ A table canvas is either a **Data Table** (`kind = 'database'`) or an **Editable
 
 - **The kind decides whether it changes.** A Data Table holds what was imported and MUST NOT be
   edited: no column or row is added, changed or removed. Only an Editable table is edited.
-- **Source.** A Data Table's `source_hash` is the imported file itself (the CSV or JSON bytes) and
-  `source_kind` is `csv` or `json`. An Editable table created empty points at the Editable table
-  sentinel (§6) with `source_kind = 'paste'`: three columns `c0`–`c2` named `Column 1`–`Column 3`
-  (`type_hint = 'unknown'`, positions 0–2) and three rows whose `cells` are `{}`. A form's new
-  answers table uses the same sentinel with no columns, no rows and `source_kind = 'csv'`.
+- **Source.** A table is created in one of five ways, and `source_hash` and `source_kind` say
+  which:
+  - **Imported file** (a Data Table): `source_hash` is the CSV or JSON file itself and
+    `source_kind` is `csv` or `json`.
+  - **Pasted text** (a Data Table): `source_hash` is the pasted text, exactly as pasted, and
+    `source_kind` is `paste`. The text is read by the CSV import rules below.
+  - **Empty Editable table:** points at the Editable table sentinel (§6) with
+    `source_kind = 'paste'`: three columns `c0`–`c2` named `Column 1`–`Column 3`
+    (`type_hint = 'unknown'`, positions 0–2) and three rows whose `cells` are `{}`.
+  - **Converted to an Editable table** from a Data Table or another Editable table: shares the
+    source's `source_hash`, copies its `shape` and `source_kind`, and copies all of its columns
+    (keys, names, type hints, positions) and rows. The source is left as it was.
+  - **A form's answers table:** either new, on the Editable table sentinel with no columns, no
+    rows and `source_kind = 'csv'`; or made from an existing table, sharing its `source_hash`,
+    copying its `shape`, `source_kind` and columns, and starting with no rows.
+
+  So `source_kind` alone does not tell a Data Table from an Editable table; the canvas `kind`
+  does.
 - **Columns.** `col_key` matches `^[A-Za-z0-9_]+$` and is unique in its table; keys are `c0`,
   `c1`, … and a new column takes one more than the highest numeric `c` key, so a deleted key is
   never reused. `name` is what is shown. `type_hint` is `text`, `number`, `date`, `boolean` or
@@ -298,11 +315,13 @@ A table canvas is either a **Data Table** (`kind = 'database'`) or an **Editable
     a tie). The first record is the header; fields are trimmed; rows may be ragged and the widest
     sets the column count. A blank header is `Column N`.
   - JSON: an array of objects gives a column per key, in order of first appearance; an array of
-    arrays gives positional columns `Column 1`, …; an array of scalars gives one column `value`;
+    arrays gives positional columns `Column 1`, …; an array of scalars gives one column `value`
+    (a single top-level scalar gives one such row);
     one object gives `Key` / `Value` rows; if the file is not one JSON document it is read as JSON
     Lines. Nested objects and arrays are stored as compact JSON text; `null` is omitted.
   - A column's `type_hint` is `number`, `boolean` or `date` when every value present is of that
-    type (CSV: an integer or finite decimal; `true`/`false` in any case; text starting
+    type (CSV: text that parses as a 64-bit integer or a finite 64-bit float, so `+5`, `1e5`
+    and `.5` count as numbers; `true`/`false` in any case; text starting
     `YYYY-MM-DD` followed by nothing, `T` or a space), `unknown` when it has no values, and `text`
     otherwise. CSV numbers and booleans in such columns are stored as JSON numbers and booleans;
     all else is a string. Empty values are omitted from `cells`.
@@ -325,8 +344,9 @@ that file once, when it is imported, and never re-derived. Deleting the canvas d
   after the file parses.
 - **Events.** Every `VEVENT` is one row, in file order; other components are ignored.
   `source_ordinal` is the event's position among the file's `VEVENT`s, counting ones that are
-  skipped. An event is skipped when it has no readable `DTSTART`, when its end is before its start,
-  or past 10 000 events.
+  skipped. An event is skipped when it has no readable `DTSTART`, when it has a `DTEND` that is
+  not readable, when its start plus its `DURATION` (or plus one day) does not fit a 64-bit
+  timestamp, when its end is before its start, or past 10 000 events.
 - **Times** are anchored without applying any time zone; `VTIMEZONE` is not read:
 
   | `DTSTART` | `start_utc` | `all_day` | `tzid` |
@@ -334,7 +354,7 @@ that file once, when it is imported, and never re-derived. Deleting the canvas d
   | a date | 00:00 UTC that day | 1 | NULL |
   | a UTC time (`…Z`) | that instant | 0 | `UTC` |
   | a floating time | the wall-clock time read as UTC | 0 | NULL |
-  | `TZID=<zone>` | the wall-clock time read as UTC | 0 | the zone, verbatim |
+  | `TZID=<zone>` | the wall-clock time read as UTC | 0 | the zone, verbatim (cut to 128 characters) |
 
   `end_utc` comes from `DTEND` (same rules), else `start_utc` plus `DURATION`
   (`[+-]P<n>W` or `[+-]P[<n>D][T[<n>H][<n>M][<n>S]]`), else one day for an all-day event and zero
@@ -350,9 +370,10 @@ that file once, when it is imported, and never re-derived. Deleting the canvas d
 - **`attachments`** is a JSON array of `{"filename","fmttype","uri"}` (in that order, `null` when
   absent; `filename` from `FILENAME`, else `X-FILENAME`), at most 64, or NULL when there are none.
   An inline attachment (`VALUE=BINARY` or `ENCODING=BASE64`) keeps no `uri`: its body is dropped.
-- **Attendees:** at most 512 per event, in file order (`ordinal` 0, 1, …): `value` trimmed,
-  `cn`, `role` and `partstat` from those parameters (NULL when absent), `rsvp` 1 only when
-  `RSVP=TRUE` (any case).
+- **Attendees:** at most 512 per event, in file order (`ordinal` 0, 1, …): `value` trimmed
+  (at most 512 characters), `cn`, `role` and `partstat` from those parameters, trimmed and NULL
+  when absent or empty (512, 64 and 64), `rsvp` 1 only when `RSVP=TRUE` (any case). Longer
+  values are cut to the limit at a character boundary.
 - **Settings.** A calendar starts with settings `{}`. DunneNote keeps its view in
   `displayDayEpoch` (the shown day's local midnight, Unix seconds), `scale` (`day`, `week`,
   `month`, `event`), `layoutMode` (`standard`, `layered`), `displayMinuteOfDay` (0–1439) and
@@ -442,7 +463,9 @@ A picture may have several captions.
   group (`canvas_instances.group_id`). New groups have settings `{}`.
 - **Layering.** Canvases draw in order of `z_index`, then `z_minor`. A new canvas goes into the
   page's top `z_index` (0 on an empty page) and takes the next `z_minor` in it, so a page's
-  canvases usually share one layer. `(page_id, z_index, z_minor)` is unique.
+  canvases usually share one layer. Writers MUST keep `(page_id, z_index, z_minor)` unique, but
+  the schema does not enforce it (a swap passes through a duplicate inside its transaction), so a
+  Reader MUST NOT rely on it: ties draw in order of `created_at`, then `id`.
 - **Archiving a page, section or notebook** (`nodes.is_archived`, `archive_reason`,
   `archive_note`, `archived_at`) marks that one row; nothing under it, none of its canvases and
   no search row changes. A reader hiding archived content checks each node's ancestors too.
@@ -496,8 +519,8 @@ A picture may have several captions.
 ## 12. The search index
 
 - **A derived cache.** `search_index` holds one row per piece of searchable text (a node's name,
-  a canvas's text, a table cell or column, a calendar event, a caption, a tag, a metadata
-  value), identified by `(source_kind, source_id, field)`. `search_index_fts` (words, with
+  a canvas's text, a table cell or column, a calendar event, a caption, a picture's alt text, a
+  tag, a metadata value), identified by `(source_kind, source_id, field)`. `search_index_fts` (words, with
   diacritics folded and prefixes of 2 and 3 characters) and `search_index_trgm` (trigrams) are
   FTS5 external-content indexes over it, kept in step by triggers. All three are derived from
   the rest of the database: they are not content. A Reader MUST NOT treat them as content and
@@ -537,8 +560,8 @@ A conforming **Writer**:
     DunneNote only rebuilds an empty index.
 11. Before committing, checks that every blob's `refcount` equals its canvases and that the files
     of blobs it added exist, and rolls back otherwise.
-12. Never deletes content it does not understand, never collects unused blobs, never deletes
-    `.archive/` snapshots.
+12. Never deletes content it does not understand, never collects unused blobs, and never deletes
+    `.archive/` snapshots except the one a successful retrieve has just read back (§10).
 13. Changes only Editable tables, never Data Tables; keeps every row's `cells` to scalars under
     existing column keys; and recounts `datasets.row_count` whenever it adds or removes a row
     ([Tables](#tables)).

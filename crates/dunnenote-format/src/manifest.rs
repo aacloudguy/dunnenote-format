@@ -46,15 +46,13 @@ impl Manifest {
                 self.format
             )));
         }
-        let major = self
-            .format_version
-            .split('.')
-            .next()
-            .and_then(|m| m.parse::<u64>().ok())
-            .filter(|_| self.format_version.split('.').count() >= 3)
-            .ok_or_else(|| {
+        // The same parser DunneNote uses: exactly major.minor.patch, with optional
+        // pre-release and build parts.
+        let major = semver::Version::parse(&self.format_version)
+            .map(|v| v.major)
+            .map_err(|_| {
                 Error::ManifestInvalid(format!(
-                    "format_version {:?} is not a version number",
+                    "format_version {:?} is not a semantic version",
                     self.format_version
                 ))
             })?;
@@ -103,5 +101,18 @@ mod tests {
             Err(Error::FormatTooNew { .. })
         ));
         assert!(manifest("dunnenote", "eighteen").validate().is_err());
+    }
+
+    #[test]
+    fn rejects_versions_that_are_not_major_minor_patch() {
+        for v in ["0.18", "0.18.0.1", "0.x.y", "0.018.0", " 0.18.0", ""] {
+            assert!(
+                matches!(
+                    manifest("dunnenote", v).validate(),
+                    Err(Error::ManifestInvalid(_))
+                ),
+                "{v:?} should be refused"
+            );
+        }
     }
 }
