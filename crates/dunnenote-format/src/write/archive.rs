@@ -16,6 +16,10 @@ use crate::error::{Error, Result};
 
 /// The folder of archive snapshots inside a notebook.
 pub const ARCHIVE_DIR: &str = ".archive";
+
+/// Most bytes a snapshot's members may hold together once unpacked; a larger one is refused
+/// unread, so a hostile `.archive/` file cannot exhaust memory (`SPEC.md` §15).
+pub const MAX_SNAPSHOT_BYTES: u64 = 64 * 1024 * 1024;
 /// The snapshot format this library writes and reads.
 pub const ARCHIVE_FORMAT_VERSION: u32 = 1;
 /// Longest archive note, in bytes.
@@ -172,14 +176,21 @@ pub fn read_snapshot(bytes: &[u8]) -> Result<Vec<ArchivedNode>> {
     let bad = |why: &str| Error::Malformed(format!("archive snapshot: {why}"));
     let mut archive = tar::Archive::new(flate2::read::GzDecoder::new(bytes));
     let (mut manifest, mut nodes) = (None, None);
+    let mut total: u64 = 0;
     for entry in archive.entries()? {
         let mut entry = entry?;
         if entry.header().entry_type() != tar::EntryType::Regular {
             return Err(bad("unexpected member type"));
         }
         let path = entry.path()?.to_string_lossy().into_owned();
+        total = total.saturating_add(entry.size());
+        if total > MAX_SNAPSHOT_BYTES {
+            return Err(bad("larger than a snapshot can be"));
+        }
         let mut data = Vec::new();
-        entry.read_to_end(&mut data)?;
+        (&mut entry)
+            .take(MAX_SNAPSHOT_BYTES)
+            .read_to_end(&mut data)?;
         match path.as_str() {
             "manifest.json" => manifest = Some(data),
             "nodes.jsonl" => nodes = Some(data),
@@ -208,7 +219,17 @@ pub fn read_snapshot(bytes: &[u8]) -> Result<Vec<ArchivedNode>> {
         .collect()
 }
 
+/// Where a node's snapshot lives. The id comes from the notebook, which may be hostile, and the
+/// schema only checks its length, so it must be a UUID before it becomes part of a path.
+fn snapshot_path(root: &Path, id: &str) -> Result<std::path::PathBuf> {
+    if !crate::notebook::is_uuid(id) {
+        return Err(Error::Malformed(format!("{id:?} is not a UUID")));
+    }
+    Ok(root.join(ARCHIVE_DIR).join(format!("{id}.tar.gz")))
+}
+
 fn write_snapshot(root: &Path, id: &str, bytes: &[u8]) -> Result<()> {
+    let path = snapshot_path(root, id)?;
     let dir = root.join(ARCHIVE_DIR);
     std::fs::create_dir_all(&dir)?;
     #[cfg(unix)]
@@ -219,8 +240,7 @@ fn write_snapshot(root: &Path, id: &str, bytes: &[u8]) -> Result<()> {
     let mut tmp = tempfile::NamedTempFile::new_in(&dir)?;
     tmp.write_all(bytes)?;
     tmp.as_file().sync_all()?;
-    tmp.persist(dir.join(format!("{id}.tar.gz")))
-        .map_err(|e| Error::Io(e.error))?;
+    tmp.persist(path).map_err(|e| Error::Io(e.error))?;
     sync_dir(&dir)
 }
 
@@ -313,7 +333,7 @@ impl Writer<'_> {
              archived_at = NULL, updated_at = unixepoch() WHERE id = ?1",
             [id],
         )?;
-        let path = self.root.join(ARCHIVE_DIR).join(format!("{id}.tar.gz"));
+        let path = snapshot_path(self.root, id)?;
         if let Ok(bytes) = std::fs::read(&path) {
             if read_snapshot(&bytes).is_ok() {
                 let _ = std::fs::remove_file(&path);
@@ -427,5 +447,19 @@ mod tests {
         gz.write_all(&builder.into_inner().unwrap()).unwrap();
         assert!(read_snapshot(&gz.finish().unwrap()).is_err());
         assert!(read_snapshot(b"not gzip").is_err());
+    }
+
+    #[test]
+    fn oversized_snapshots_are_refused_unread() {
+        // A header that claims more than a snapshot may hold, with no body behind it.
+        let mut header = tar::Header::new_gnu();
+        header.set_path("nodes.jsonl").unwrap();
+        header.set_size(MAX_SNAPSHOT_BYTES + 1);
+        header.set_entry_type(tar::EntryType::Regular);
+        header.set_cksum();
+        let mut gz = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::new(6));
+        gz.write_all(header.as_bytes()).unwrap();
+        let err = read_snapshot(&gz.finish().unwrap()).unwrap_err();
+        assert!(err.to_string().contains("larger than"), "{err}");
     }
 }

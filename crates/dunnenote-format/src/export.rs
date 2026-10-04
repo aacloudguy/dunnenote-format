@@ -506,7 +506,7 @@ fn canvas_md(
         CanvasKind::Sketch => {
             let strokes = nb.sketch(&c.id)?.map(|s| s.strokes()).unwrap_or_default();
             fs::create_dir_all(assets)?;
-            let file = format!("sketch-{}.svg", c.id);
+            let file = format!("sketch-{}.svg", safe_name(&c.id));
             fs::write(assets.join(&file), sketch_svg(&strokes, c.width, c.height))?;
             summary.files.push(Path::new("assets").join(&file));
             format!("![Sketch](<{}assets/{file}>)", up(depth))

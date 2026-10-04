@@ -228,7 +228,8 @@ fn inline_md(nodes: &[Value]) -> String {
                 piece = format!("{open}{piece}{close}");
             }
         }
-        if let Some(href) = &run.href {
+        // A link DunneNote would not follow stays plain text, so the export cannot carry it.
+        if let Some(href) = run.href.as_deref().filter(|h| crate::payload::safe_href(h)) {
             piece = format!("[{piece}](<{}>)", href.replace(['<', '>'], ""));
         }
         out.push_str(lead);

@@ -3,6 +3,7 @@
 use std::fs::File;
 use std::path::{Path, PathBuf};
 
+use rusqlite::config::DbConfig;
 use rusqlite::{Connection, OpenFlags, OptionalExtension, Row as SqlRow};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -133,6 +134,7 @@ impl Notebook {
             &db_path,
             OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
         )?;
+        harden(&conn)?;
         conn.busy_timeout(std::time::Duration::from_millis(5000))?;
         conn.pragma_update(None, "query_only", "ON")?;
         let schema_version: u32 = conn.query_row("PRAGMA user_version", [], |r| r.get(0))?;
@@ -639,6 +641,24 @@ impl Notebook {
     }
 }
 
+/// Whether `s` is an id in the form §5 gives: a lowercase hyphenated UUID.
+pub(crate) fn is_uuid(s: &str) -> bool {
+    s.len() == 36
+        && s.bytes().enumerate().all(|(i, b)| match i {
+            8 | 13 | 18 | 23 => b == b'-',
+            _ => b.is_ascii_digit() || (b'a'..=b'f').contains(&b),
+        })
+}
+
+/// Treat the database as untrusted (`SPEC.md` §15), before its schema is first read: functions
+/// in its triggers and indexes run only if SQLite deems them harmless, and defensive mode refuses
+/// statements that could corrupt the file.
+pub(crate) fn harden(conn: &Connection) -> Result<()> {
+    conn.set_db_config(DbConfig::SQLITE_DBCONFIG_TRUSTED_SCHEMA, false)?;
+    conn.set_db_config(DbConfig::SQLITE_DBCONFIG_DEFENSIVE, true)?;
+    Ok(())
+}
+
 /// Where a blob's bytes live under a notebook root.
 pub(crate) fn blob_path_in(root: &Path, hash: &str) -> Result<PathBuf> {
     if hash.len() != 64
@@ -656,4 +676,27 @@ pub(crate) fn blob_path_in(root: &Path, hash: &str) -> Result<PathBuf> {
         .join(&hash[0..2])
         .join(&hash[2..4])
         .join(format!("{hash}.bin")))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn connections_distrust_the_schema() {
+        let nb = Notebook::open(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../fixtures/minimal.dunnenote"
+        ))
+        .unwrap();
+        let trusted: i64 = nb
+            .conn
+            .query_row("PRAGMA trusted_schema", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(trusted, 0);
+        assert!(nb
+            .conn
+            .db_config(DbConfig::SQLITE_DBCONFIG_DEFENSIVE)
+            .unwrap());
+    }
 }

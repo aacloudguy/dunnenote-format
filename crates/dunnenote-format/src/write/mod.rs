@@ -2,7 +2,7 @@
 //!
 //! Every change follows the format's writer rules (`SPEC.md`, "Writer checklist"):
 //!
-//! - Only a notebook at exactly [`SCHEMA_VERSION`](crate::SCHEMA_VERSION) with a `0.x` manifest
+//! - Only a notebook at exactly [`SCHEMA_VERSION`] with a `0.x` manifest
 //!   is written. Newer and older notebooks are refused.
 //! - The writer holds `.dunnenote.lock` exclusively for as long as the notebook is open, so it
 //!   never writes while DunneNote has the notebook open (and DunneNote cannot open it meanwhile).
@@ -34,7 +34,7 @@ use crate::error::{Error, Result};
 use crate::gate::Compat;
 use crate::manifest::{Manifest, FORMAT_DISCRIMINATOR};
 use crate::model::{CanvasKind, Settings, Stroke};
-use crate::notebook::{blob_path_in, Notebook};
+use crate::notebook::{blob_path_in, harden, Notebook};
 use crate::payload;
 use crate::position;
 use crate::schema::{create_schema, FORMAT_VERSION, SCHEMA_VERSION};
@@ -211,6 +211,7 @@ fn sha256_hex(bytes: &[u8]) -> String {
 
 /// DunneNote's connection settings, applied to every connection that writes.
 fn apply_pragmas(conn: &Connection) -> Result<()> {
+    harden(conn)?;
     conn.pragma_update(None, "journal_mode", "WAL")?;
     conn.pragma_update(None, "foreign_keys", "ON")?;
     conn.pragma_update(None, "recursive_triggers", "ON")?;
