@@ -21,6 +21,9 @@ The key words MUST, MUST NOT, SHOULD and MAY are to be interpreted as described 
 12. [The search index](#12-the-search-index)
 13. [Writer checklist](#13-writer-checklist)
 14. [Versioning and changelog](#14-versioning-and-changelog)
+15. [Security considerations](#15-security-considerations)
+
+[Appendix A. Sibling position algorithm](#appendix-a-sibling-position-algorithm)
 
 ## 1. Scope and conformance
 
@@ -42,9 +45,15 @@ There are two levels of conformance:
   root node, and the manifest described in §2.
 
 The notebooks in `fixtures/` were produced by DunneNote itself and are part of this
-specification: a Reader MUST read each one as `fixtures/expected.json` describes. A Writer's
-output is conforming when DunneNote opens it, finds nothing to repair, and reads back what was
-written.
+specification: a Reader MUST read each one as `fixtures/expected.json` describes. The files in
+`vectors/` are part of it too: they give exact inputs and outputs for the sibling position
+algorithm (§5, Appendix A) and fold v1 (§11), and an implementation MUST reproduce every one.
+
+A Writer's output is conforming when DunneNote opens it, finds nothing to repair, and reads back
+what was written. Anyone can check most of this without DunneNote: a conforming notebook passes
+`dnfmt verify --full` (from this repository) with no findings, and reads back through
+`dnfmt export --json` as what was written. The final test, opening the notebook in DunneNote,
+needs only the app.
 
 ## 2. Bundle layout
 
@@ -68,7 +77,8 @@ notebook's name (that is the root node's `name`, §4).
 out of a copy. Readers MUST NOT rely on `.state/`, whose contents change between DunneNote
 releases, and Writers MUST NOT change it.
 
-- **`format.json`** is a JSON object with exactly these fields:
+- **`format.json`** is a JSON object. A Writer creating a notebook writes exactly these fields,
+  and a Reader ignores any others:
   - `format`: always `"dunnenote"`;
   - `format_version`: the version the notebook was *created* at, `"0.<schema>.0"`, for example
     `"0.18.0"`;
@@ -116,7 +126,8 @@ releases, and Writers MUST NOT change it.
   | less than 18 | MUST refuse; DunneNote upgrades it when it next opens the notebook | MUST refuse, and MUST NOT upgrade it |
 
   A Reader that refuses SHOULD say why: newer notebooks need a newer reader, and older ones need
-  to be opened once in DunneNote.
+  to be opened once in DunneNote. Reading schema 19 is safe because of the compatibility rule
+  in §14: one schema step only adds things a Reader can ignore.
 - **The manifest gate.** A Reader MUST refuse a notebook whose `format.json` is missing, is not
   valid JSON, or lacks any of its five fields (§2); whose `format` is not `"dunnenote"`; or whose
   `format_version` is not a semantic version (`major.minor.patch`, each a number without leading
@@ -178,17 +189,27 @@ Triggers a Writer relies on:
 
 - **Ids.** Every row id, and `format.json`'s `notebook_id`, is a lowercase hyphenated UUID
   (36 characters). Writers SHOULD mint UUIDv7. The root node's id is not the `notebook_id`.
-- **Sibling positions** (`nodes.position`) are fractional indexes: the bytes of a `ZenoIndex`
-  (the `fractional_index` crate, 1.0.1) followed by one sentinel byte `0x80`, written as lowercase
-  hex, at most 256 characters. Siblings sort by plain byte order of the string, and
-  `(parent_id, position)` is unique. The first child of an empty parent is `80`; appending gives
-  `c080`, `c180`, …; inserting before `80` gives `4080`. A writer MUST produce positions with this
-  codec and MUST NOT rewrite existing siblings' positions to make room.
+- **Sibling positions** (`nodes.position`) are fractional indexes: a string of bytes followed by
+  one sentinel byte `0x80`, written as lowercase hex, at most 256 characters. Siblings sort by
+  plain byte order of the string, and `(parent_id, position)` is unique. The first child of an
+  empty parent is `80`; appending gives `c080`, `c180`, …; inserting before `80` gives `4080`.
+  A writer MUST compute new positions with the algorithm in
+  [Appendix A](#appendix-a-sibling-position-algorithm), whose results `vectors/positions.json`
+  lists, and MUST NOT rewrite existing siblings' positions to make room.
 - **Timestamps** are Unix seconds (UTC). Writers MUST take them from SQLite's `unixepoch()` in the
   statement that writes the row, not from their own clock. (`format.json`'s `created_at` is the
   one exception: it is written before the database exists.)
 - **Names** of notebooks, sections and pages are 1–255 bytes with no NUL, CR or LF, stored
   exactly as given (no trimming or normalisation).
+- **JSON text.** Every JSON value stored in the database (settings, payloads, cells,
+  `categories`, `attachments`) is UTF-8 text with no whitespace outside strings. Strings escape
+  only `"`, `\` and U+0000–U+001F: as `\b`, `\f`, `\n`, `\r` and `\t` where one exists, otherwise
+  as `\u00xx` with lowercase hex. Readers MUST accept any valid JSON number and MUST NOT depend
+  on key order. In sketches and typed table cells (§8), numbers are written as JavaScript's
+  `JSON.stringify` writes them (`7`, not `7.0`; `0.5`, not `5e-1`). Writers keep
+  the key order this document gives wherever it gives one (sketches, page settings, captions,
+  calendar attachments, archive snapshots), and otherwise keep stored keys in their stored
+  order.
 
 ## 6. Blobs
 
@@ -221,10 +242,14 @@ Triggers a Writer relies on:
   other key — including keys it does not know — in place. It MUST NOT re-serialize a subset.
 - **Page settings** (`nodes.settings`, pages only) are NULL until set. DunneNote writes the keys it
   does not know first, in their stored order, then its own keys in this order, each only when it
-  is not the default: `hideCanvasFrames` (`true`), `formTabOrder` (a non-empty array of canvas
-  ids), `formFillMode` (`true`), `formDestination`, `formLabelDisplay`, `hideSubmittedColumn`
-  (`true`), `dateDisplayFormat` (`iso`, `dmy`, `mdy`, `numeric-dmy` or `numeric-mdy`). When nothing
-  is left the column is set back to NULL. The legacy `formTargetId` (a canvas id) is read as a
+  holds a value of the shape shown: `hideCanvasFrames` (`true`), `formTabOrder` (a non-empty
+  array of canvas ids), `formFillMode` (`true`), `formDestination` (§9), `formLabelDisplay`
+  (`off`, `hover`, `above` or `below`), `hideSubmittedColumn` (`true`), `dateDisplayFormat`
+  (`iso`, `dmy`, `mdy`, `numeric-dmy` or `numeric-mdy`). A flag that is `false`, an empty array,
+  and a value of any other shape are all the default, and are not written. `formDestination`,
+  `formLabelDisplay` and `dateDisplayFormat` have no stored default: absent means the page has
+  no form destination and DunneNote's own display choices apply. When nothing is left the
+  column is set back to NULL. The legacy `formTargetId` (a canvas id) is read as a
   canvas `formDestination` when that key is absent, and is never written.
 - **Reserved canvas keys.** A reader treats a key whose value does not have the shape below as
   absent. Flags count only as the literal `true`.
@@ -244,27 +269,54 @@ Triggers a Writer relies on:
 ## 8. Payloads: rich text and sketch
 
 - **Rich text** (`rich_text_instances.data`, `schema_version` 1) is a bare ProseMirror document,
-  `{"type":"doc","content":[…]}`, in DunneNote's editor schema:
-  - blocks: `paragraph` (`align`), `heading` (`level` 1–3, `align`), `bullet_list`,
-    `ordered_list` (`order`), `list_item` (content: a paragraph, then blocks);
-  - inline: `text` (non-empty), `numFmt` (`raw`, `format`), `notebook_link` (`canvasId`,
-    `labelSnapshot`, `notebookId` — empty for this notebook — and `notebookLabelSnapshot`);
-  - marks, in this rank order: `strong`, `em`, `underline`, `strike`, `link` (`href`, `title`),
-    `font_family` (`key`), `font_size` (`px`), `text_color` (`color`), `highlight` (`color`);
-  - `align` is `left`, `center`, `right` or `justify`; colours are lowercase `#rrggbb` /
-    `#rrggbbaa`, `rgb(r, g, b)` or `rgba(r, g, b, a)`; links MUST NOT use `javascript:`, `data:`,
-    `vbscript:` or `blob:`.
+  `{"type":"doc","content":[…]}`, in DunneNote's editor schema. Every node is an object with
+  `type` and, only as listed, `attrs`, `content`, `marks` and `text`. Every attribute is
+  optional unless marked *required*:
+  - **`doc`**: `content`, at least one block.
+  - **Blocks:** `paragraph` (`align`; content: inline nodes), `heading` (`level` 1, 2 or 3,
+    `align`; content: inline nodes), `bullet_list` (no attributes) and `ordered_list` (`order`, a
+    whole number ≥ 0), each with at least one `list_item`. A `list_item` (no attributes) holds a
+    `paragraph` first, then any blocks. `align` is `left`, `center`, `right` or `justify`.
+  - **Inline nodes**, only inside a paragraph or heading, each with optional `marks`:
+    - `text`: `text`, a non-empty string;
+    - `notebook_link`: `canvasId`, `labelSnapshot`, `notebookId` (empty for this notebook) and
+      `notebookLabelSnapshot`, all strings;
+    - `numFmt`, a formatted number: `raw` (a string, the number as typed) and `format`. `format`
+      is an object with *required* `style` (`decimal`, `currency` or `percent`) and *required*
+      `locale` (a string), and optional `currency` (three upper-case ISO 4217 letters),
+      `currencyDisplay` (`symbol` or `code`), `minimumFractionDigits` and
+      `maximumFractionDigits` (whole numbers 0–20), `useGrouping` (`true` or `false`) and
+      `negativeStyle` (`minus` or `parens`).
+  - **Marks**, each at most once per node, in this rank order (DunneNote sorts them into it):
+    `strong`, `em`, `underline` and `strike` (no attributes); `link` (*required* `href`, and
+    `title`, a string or `null`); `font_family` (*required* `key`: `inter`, `source-sans-3`,
+    `public-sans`, `literata`, `source-serif-4`, `lora`, `jetbrains-mono`, `ibm-plex-mono` or
+    `fira-code`); `font_size` (*required* `px`, a whole number 1–1000); `text_color` and
+    `highlight` (*required* `color`).
+  - **Colours** are lowercase `#rrggbb` or `#rrggbbaa`, `rgb(r, g, b)` or `rgba(r, g, b, a)`,
+    with exactly one space after each comma, channels 0–255 without leading zeros, and alpha
+    0–1 written as JavaScript writes numbers (`0.5`, not `.5` or `0.50`).
+  - **Links** have a non-empty `href` with no control characters. The scheme, the text before
+    the first `:` with whitespace removed and compared in any case, MUST NOT be `javascript`,
+    `data`, `vbscript` or `blob`.
 
   A writer MUST NOT store a document with unknown nodes, marks or attributes, empty text nodes or
   content that breaks these rules: DunneNote refuses the first and silently alters the rest. An
-  empty canvas holds `{"type":"doc","content":[{"type":"paragraph"}]}`. At most 8 MiB.
+  empty canvas holds `{"type":"doc","content":[{"type":"paragraph"}]}`. At most 8 MiB. The
+  editor schema only grows: later versions may add nodes and marks, but never rename or remove
+  them.
 - **Sketch** (`sketch_instances.data`, `schema_version` 1) is
   `{"v":1,"strokes":[{"id","points":[{"x","y","p"}],"color","width","tool":"pen"}]}`, keys in
   that order. `x` and `y` are fractions of the canvas frame, clamped to 0–1 and rounded to 4
-  places; pressure `p` is in (0, 1], rounded to 2 places with a floor of 0.01. Every stroke has a
-  non-empty unique `id`, at least two points, a colour (`#rrggbb` recommended) and a width > 0.
-  DunneNote opens a sketch containing any stroke it cannot read **read-only**, so writers MUST NOT
-  store one. An empty sketch is `{"v":1,"strokes":[]}`. At most 8 MiB.
+  places; pressure `p` is in (0, 1], rounded to 2 places with a floor of 0.01 (a missing,
+  non-finite or non-positive pressure is read as 0.5, and one above 1 as 1). Rounding is
+  JavaScript's `Math.round(n × 10^places) / 10^places`, and numbers are written as
+  `JSON.stringify` writes them. Every stroke has a non-empty `id` that is unique in the sketch, at
+  least two points with finite coordinates, a non-empty `color` string, and a `width` in
+  (0, 1000]. DunneNote's own strokes use six-digit hex colours in either case (`#111827`,
+  `#1D4ED8`), and a Writer SHOULD too. DunneNote opens a sketch containing any stroke it cannot
+  read **read-only**, so writers MUST NOT store one. An empty sketch is `{"v":1,"strokes":[]}`.
+  At most 8 MiB.
 - **Picture markup** uses the sketch shape, in the `sketch_instances` row whose `instance_id` is
   the picture's canvas id, with coordinates as fractions of the natural image. No row means no
   markup.
@@ -337,11 +389,21 @@ A Calendar canvas (`kind = 'calendar'`) points at the imported `.ics` file itsel
 blob; its events are rows of `calendar_events` (with `calendar_event_attendees`), derived from
 that file once, when it is imported, and never re-derived. Deleting the canvas deletes them.
 
-- **Accepting a file.** At most 5 MiB and not empty; its first 4 KiB MUST start (after an
-  optional UTF-8 byte-order mark and whitespace) with `BEGIN:VCALENDAR` in any case; and it MUST
-  parse as iCalendar. (DunneNote's parser then refuses a file with a byte-order mark or leading
-  whitespace, so in practice the file starts with `BEGIN:VCALENDAR`.) The blob is stored only
-  after the file parses.
+- **Accepting a file.** DunneNote accepts a file only when all of these hold, and a Writer that
+  imports MUST accept exactly the same files:
+  - it is not empty and is at most 5 MiB;
+  - it has no UTF-8 byte-order mark, and starts with `BEGIN:VCALENDAR` in any case, optionally
+    preceded by blank lines (CR and LF only; a leading space or tab is refused);
+  - it is one component, closed by its `END`, followed by nothing except line breaks;
+  - every `BEGIN:<name>` is closed by an `END:<name>` that spells the name exactly the same way
+    (the words `BEGIN` and `END` themselves may be in any case).
+
+  Lines end in CRLF or LF (a bare CR is not a line break), and a line starting with a space or
+  tab continues the previous one (RFC 5545 folding). Bytes that are not valid UTF-8 are read as
+  U+FFFD. Component and property names are read in upper case only: a file whose outer component
+  is not spelled `VCALENDAR`, or whose events are not spelled `VEVENT`, is accepted with no
+  events, and a lower-case `dtstart` is not read. Other malformed lines, such as one with no `:`,
+  are ignored. The blob is stored only after the file is accepted.
 - **Events.** Every `VEVENT` is one row, in file order; other components are ignored.
   `source_ordinal` is the event's position among the file's `VEVENT`s, counting ones that are
   skipped. An event is skipped when it has no readable `DTSTART`, when it has a `DTEND` that is
@@ -491,12 +553,24 @@ A picture may have several captions.
 
 ## 11. Tags and metadata, fold v1
 
-- **Fold v1** is the comparison form of tag names, aliases, metadata keys and text values:
-  Unicode NFC, then full lowercase (not locale-aware), then NFD, then every combining mark
-  removed, then NFC. Nothing is trimmed. Examples: `Téxas` → `texas`, `Straße` → `straße`,
-  `İstanbul` → `istanbul`, `Ελλάδα` → `ελλαδα`, `東京タワー` unchanged, a string of only combining
-  marks → empty. Writers MUST produce the same folds as DunneNote, whose Unicode tables are
-  those of Rust 1.95 and `unicode-normalization` 0.1.24.
+- **Fold v1** is the comparison form of tag names, aliases, metadata keys and text values. In
+  order:
+  1. Normalize to NFC.
+  2. Lowercase with the full mappings of `UnicodeData.txt` and `SpecialCasing.txt`, including
+     the context-dependent Final_Sigma rule (`ΟΔΟΣ` → `οδος`, ending in ς) and no
+     language-specific rules (`İ` → `i̇`, then step 4 removes the dot).
+  3. Normalize to NFD.
+  4. Remove every character whose General_Category is a mark (`Mn`, `Mc` or `Me`).
+  5. Normalize to NFC.
+
+  Nothing is trimmed. Examples: `Téxas` → `texas`, `Straße` → `straße`, `İstanbul` →
+  `istanbul`, `Ελλάδα` → `ελλαδα`, `東京タワー` unchanged, a string of only combining marks →
+  empty. The Unicode versions are part of fold v1: lowercasing (step 2) uses **Unicode 17.0**,
+  and normalization and the mark test (steps 1, 3, 4 and 5) use **Unicode 16.0**. These are the
+  tables of DunneNote's Rust 1.95 and `unicode-normalization` 0.1.24. Writers MUST produce the
+  same folds as DunneNote, and `vectors/fold.json` lists inputs with their folds. Tables of
+  another Unicode version fold almost every string the same way, but may differ on characters
+  added or changed since; this is why DunneNote and this repository pin both versions.
 - **Tags** (`tags`): `name` is trimmed, 1–255 characters, without NUL, CR or LF; its fold MUST
   be non-empty and have no blank `/`-separated segment (a `/` expresses hierarchy). `name_folded`
   is unique, and a name also MUST NOT fold to any alias. Creating a tag whose name folds to an
@@ -570,9 +644,10 @@ A conforming **Writer**:
 15. Folds with fold v1 exactly (§11), and writes the `.archive/` snapshot before marking a node
     archived (§10).
 
-`dunnenote-format` implements this checklist; its conformance suite includes notebooks it writes
+`dunnenote-format` implements this checklist. Its conformance suite includes notebooks it writes
 being opened by DunneNote's own code, health-checked with no findings, and read back field for
-field.
+field. That step runs inside DunneNote's own repository. Other implementations can run the
+checks in §1 themselves.
 
 ## 14. Versioning and changelog
 
@@ -586,9 +661,15 @@ field.
   or Writer needs to know about. When DunneNote reaches 1.0, the format at that schema becomes
   **DunneNote Format 1.0**, and from then on changes follow semantic versioning: a new major
   version for a change that an older Reader cannot safely ignore.
-- **Tolerance.** A Reader for schema N reads schema N+1 (§3). DunneNote itself writes only its
-  own schema, and upgrades older notebooks when it opens them. It keeps the copy
-  `notebook.db.bak-v<N>` of the database first.
+- **Tolerance.** A Reader for schema N reads schema N+1 (§3). This works because of a rule
+  every schema change follows: **schema N+1 only adds.** It may add tables, columns with
+  defaults, triggers, settings keys, canvas kinds, rich text nodes and marks, and new values a
+  Reader can treat as unknown. It does not remove or rename anything, change what an existing
+  column, key or value means, or tighten an existing rule so that data valid at N becomes
+  invalid. A change that cannot follow this rule skips a version: the schema goes from N to
+  N+2, so a schema-N Reader refuses it. DunneNote itself writes only its own schema, and
+  upgrades older notebooks when it opens them. It keeps the copy `notebook.db.bak-v<N>` of the
+  database first.
 - **Other versioned shapes**, each changed independently of the schema and only by raising
   its number:
 
@@ -605,5 +686,100 @@ field.
 
 ### Changelog
 
-- **0.18 (draft)**: the first published version. It describes schema 18, the schema of
-  DunneNote 0.9.
+- **0.18 (draft), revision 2** (unreleased): clarifications only; no notebook that was valid
+  becomes invalid. The sibling position algorithm is now written out (Appendix A), and fold v1
+  names its Unicode versions; both have test vectors in `vectors/`. The full rich text value
+  sets, the sketch stroke limits, the rules for accepting a calendar file, how stored JSON is
+  written, and the page settings defaults are now stated. One correction: a calendar file may
+  begin with blank lines. Added the
+  compatibility rule between schema versions (§14), how anyone can check conformance (§1), and
+  Security considerations (§15).
+- **0.18 (draft)**, 2026-10-02: the first published version. It describes schema 18, the
+  schema of DunneNote 0.9.
+
+## 15. Security considerations
+
+A notebook is untrusted input: it may come from anyone, and every file in it may have been
+crafted. Readers and Writers MUST handle a hostile notebook without harm to the rest of the
+system, and SHOULD refuse it with an error rather than crash.
+
+- **SQLite.** Open `notebook.db` with SQLite's defensive mode on
+  (`SQLITE_DBCONFIG_DEFENSIVE`) and with `trusted_schema` off (`PRAGMA trusted_schema=OFF` or
+  `SQLITE_DBCONFIG_TRUSTED_SCHEMA`), before the schema is first read. The database's own
+  triggers, views and indexes are then limited to functions SQLite deems harmless. Do not enable
+  extension loading, and register no application functions with side effects on a connection
+  to a notebook. A Writer's statements fire the notebook's triggers, so a hostile notebook can
+  change its own database when written to, but nothing outside it.
+- **Paths.** Build file paths only from values checked against this document. A blob hash MUST
+  be exactly 64 lowercase hex characters before it becomes a path (§6), and ids MUST be UUIDs
+  (§5). Never take a file name or path from settings or content. In particular, the `path` of
+  an `external` form destination (§9) names a file on the computer of whoever set it up. Readers
+  and exporters MUST NOT read or write it; only DunneNote, when a person submits that form,
+  writes there.
+- **Archive snapshots** (§10) are read in memory as exactly two regular members named
+  `manifest.json` and `nodes.jsonl`. Any other member, member type or name is refused, and
+  nothing is unpacked to disk. A reader SHOULD bound the unpacked size; `dunnenote-format`
+  refuses a snapshot whose members hold more than 64 MiB.
+- **Sizes.** The limits in this document (8 MiB payloads, 64 KiB settings, 5 MiB imports,
+  10 000 events, 256-character positions and so on) also limit how much a Reader parses. A
+  Reader SHOULD apply them on reading as well as writing, and SHOULD treat an over-limit item as
+  unreadable.
+- **Links and markup.** Rich text `href`s and calendar `url`s are untrusted. A Reader that
+  renders them, for example in an export to HTML or Markdown, MUST NOT let `javascript:`,
+  `data:`, `vbscript:` or `blob:` links become live (§8), and MUST escape all text it copies
+  into markup.
+- **The lock and other processes.** A Reader never takes the lock and never writes (§1), so it
+  cannot damage a notebook that DunneNote has open. A Writer that finds the lock held MUST
+  refuse rather than wait or break it (§13).
+
+Report security problems in this specification or in `dunnenote-format` privately, as
+[SECURITY.md](SECURITY.md) describes.
+
+## Appendix A. Sibling position algorithm
+
+A position (§5) is a byte string *Z* followed by the sentinel byte `0x80`, stored as lowercase
+hex. Decode by reading the hex and removing the final `0x80`. A stored position that is not
+lowercase hex, is empty, or does not end in `80` is malformed. Encode by appending `0x80` and
+writing lowercase hex. In the steps below, *Z*[*i*] is the byte at index *i* (from 0), *Z*[..*i*]
+is the bytes before index *i*, *Z*[..=*i*] also includes byte *i*, *Z*[*i*..] is the bytes from
+index *i* on, and + joins byte strings.
+
+**First.** The first child of an empty parent has *Z* = the empty string (stored `80`).
+
+**Before(*Z*)**, used to insert before the first sibling. For each index *i* in order:
+- if *Z*[*i*] ≥ `0x80`, the result is *Z*[..*i*];
+- otherwise, if *Z*[*i*] > `0x00`, the result is *Z*[..*i*] + (*Z*[*i*] − 1).
+
+If every byte is `0x00` (or *Z* is empty), the result is *Z* + `0x40`.
+
+**After(*Z*)**, used to append after the last sibling. For each index *i* in order:
+- if *Z*[*i*] < `0x80`, the result is *Z*[..*i*];
+- otherwise, if *Z*[*i*] < `0xFF`, the result is *Z*[..*i*] + (*Z*[*i*] + 1).
+
+If every byte is `0xFF` (or *Z* is empty), the result is *Z* + `0xC0`.
+
+**Between(*L*, *R*)**, used to insert between two adjacent siblings where *L* sorts before *R*.
+Let *n* be the shorter length. For each index *i* < *n* in order:
+- if *L*[*i*] = *R*[*i*], continue;
+- if *L*[*i*] > *R*[*i*], there is no result (the inputs are out of order);
+- otherwise *L*[*i*] < *R*[*i*], and the result is the first of these that applies:
+  1. if *L*[*i*] ≤ `0x7F` < *R*[*i*]: *L*[..*i*];
+  2. if *R*[*i*] − *L*[*i*] ≥ 2: *L*[..*i*] + (*L*[*i*] + ⌊(*R*[*i*] − *L*[*i*]) / 2⌋);
+  3. if *L* is no longer than *R*: *L*[..=*i*] + After(*L*[*i*+1..]);
+  4. otherwise: *R*[..=*i*] + Before(*R*[*i*+1..]).
+
+If the first *n* bytes are all equal:
+- if *L* is shorter, let *d* = *R*[*n*]. If *d* > `0x80`, the result is *R*[..*n*] + (*d* − 1).
+  If *d* = `0x80`, it is *R*[..=*n*] + Before(*R*[*n*+1..]). If *d* < `0x80`, there is no
+  result.
+- if *R* is shorter, let *d* = *L*[*n*]. If *d* < `0x7F`, the result is *L*[..*n*] + (*d* + 1).
+  If *d* = `0x7F`, it is *L*[..=*n*] + After(*L*[*n*+1..]). If *d* > `0x7F`, there is no
+  result.
+- if they are the same length, there is no result.
+
+A Writer adding a node at the end of a parent uses After(last sibling), at the start uses
+Before(first sibling), and between two siblings uses Between. An empty parent gets First. If
+the encoded result would be longer than 256 characters, the Writer MUST refuse the insertion
+rather than store it. `vectors/positions.json` lists 430 operations with their exact results,
+including a long random sequence of insertions; a conforming implementation reproduces every
+one.

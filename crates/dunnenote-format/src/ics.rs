@@ -469,4 +469,51 @@ END:VCALENDAR\r
         assert!(parse_ics(b"\r\n  BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n").is_err());
         assert!(parse_ics(b"\xEF\xBB\xBFBEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n").is_err());
     }
+
+    /// The acceptance rules of `SPEC.md` §8 ("Accepting a file"), one by one.
+    #[test]
+    fn acceptance_rules() {
+        let ev =
+            "BEGIN:VEVENT\r\nUID:a\r\nDTSTART:20260105T093000Z\r\nSUMMARY:Hi\r\nEND:VEVENT\r\n";
+        let ok = format!("BEGIN:VCALENDAR\r\nVERSION:2.0\r\n{ev}END:VCALENDAR\r\n");
+        let events = |text: &str| parse_ics(text.as_bytes()).map(|c| c.events.len()).ok();
+
+        assert_eq!(events(&ok), Some(1));
+        // Line breaks: LF alone is fine, a bare CR is not; folding joins lines.
+        assert_eq!(events(&ok.replace("\r\n", "\n")), Some(1));
+        assert_eq!(events(&ok.replace("\r\n", "\r")), None);
+        let folded = parse_ics(ok.replace("SUMMARY:Hi", "SUMMARY:H\r\n\ti").as_bytes()).unwrap();
+        assert_eq!(folded.events[0].summary, "Hi");
+        // Blank lines may come first; spaces and tabs may not.
+        assert_eq!(events(&format!("\r\n\n{ok}")), Some(1));
+        assert_eq!(events(&format!(" {ok}")), None);
+        assert_eq!(events(&format!("\t{ok}")), None);
+        // One component, then only line breaks.
+        assert_eq!(events(&format!("{ok}\r\n\r\n")), Some(1));
+        assert_eq!(events(ok.trim_end()), Some(1));
+        assert_eq!(events(&format!("{} ", ok.trim_end())), None);
+        assert_eq!(events(&format!("{ok}X:1\r\n")), None);
+        assert_eq!(events(&format!("{ok}{ok}")), None);
+        // BEGIN and END pair up by the exact spelling of the name, in any case of the keywords.
+        assert_eq!(events(&ok.replace("END:VEVENT\r\n", "")), None);
+        assert_eq!(events(&ok.replace("END:VCALENDAR", "END:vcalendar")), None);
+        assert_eq!(events(&ok.replace("END:VEVENT", "end:VEVENT")), Some(1));
+        // Names are read in upper case only.
+        assert_eq!(events(&ok.to_lowercase()), Some(0));
+        assert_eq!(
+            events(
+                &ok.replace("BEGIN:VEVENT", "BEGIN:vevent")
+                    .replace("END:VEVENT", "END:vevent")
+            ),
+            Some(0)
+        );
+        let lower = parse_ics(ok.replace("DTSTART:", "dtstart:").as_bytes()).unwrap();
+        assert_eq!((lower.events.len(), lower.skipped), (0, 1));
+        // Malformed lines are ignored; invalid UTF-8 becomes U+FFFD.
+        assert_eq!(events(&ok.replace("VERSION:2.0", "VERSION")), Some(1));
+        let mut bytes = ok.replace("Hi", "H#i").into_bytes();
+        let at = bytes.iter().position(|b| *b == b'#').unwrap();
+        bytes[at] = 0xFF;
+        assert_eq!(parse_ics(&bytes).unwrap().events[0].summary, "H\u{FFFD}i");
+    }
 }
