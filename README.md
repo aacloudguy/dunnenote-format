@@ -3,7 +3,7 @@
 The open **DunneNote Format**: a specification and an MIT-licensed Rust library and command-line
 tool (`dnfmt`) for reading and writing DunneNote notebooks (`.dunnenote`) without DunneNote.
 
-DunneNote is a commercial, offline-first notebook app from DunneCorp. Its notebooks are plain
+DunneNote is a commercial, offline-first notebook app from Dunne, Corp. (DunneCorp). Its notebooks are plain
 folders on your disk: a SQLite database, a content-addressed blob store, and a small manifest.
 This project exists so that your notes never depend on one application to stay readable or
 editable.
@@ -28,6 +28,7 @@ editable.
 | `dnfmt new`, `add-section`, `add-page`, `add-canvas rich-text\|sketch\|picture\|table\|calendar`, `table`, `form`, `caption`, `template`, `archive`, `retrieve`, `tag`, `meta` | available |
 | `SPEC.md` — the full specification, with a writer checklist | available (0.18 draft) |
 | Golden test notebooks produced by DunneNote itself ([fixtures](fixtures/README.md)) | available |
+| Test vectors for sibling positions and fold v1, for implementations in any language ([vectors](vectors/)) | available |
 
 ## Install
 
@@ -50,16 +51,15 @@ dunnenote-format = { git = "https://github.com/aacloudguy/dunnenote-format", tag
 ## Try it
 
 ```sh
-cargo build --release
-./target/release/dnfmt inspect ~/Notes/Research.dunnenote
-./target/release/dnfmt ls ~/Notes/Research.dunnenote
-./target/release/dnfmt cat ~/Notes/Research.dunnenote <page-or-canvas-id>
-./target/release/dnfmt verify ~/Notes/Research.dunnenote --full
+dnfmt inspect ~/Notes/Research.dunnenote
+dnfmt ls ~/Notes/Research.dunnenote
+dnfmt cat ~/Notes/Research.dunnenote <page-or-canvas-id>
+dnfmt verify ~/Notes/Research.dunnenote --full
 
 # Readable copies (the output folder must be new or empty; nothing is overwritten)
-./target/release/dnfmt export --md   ~/Notes/Research.dunnenote ~/Desktop/Research-md
-./target/release/dnfmt export --csv  ~/Notes/Research.dunnenote ~/Desktop/Research-csv
-./target/release/dnfmt export --json ~/Notes/Research.dunnenote ~/Desktop/Research.json
+dnfmt export --md   ~/Notes/Research.dunnenote ~/Desktop/Research-md
+dnfmt export --csv  ~/Notes/Research.dunnenote ~/Desktop/Research-csv
+dnfmt export --json ~/Notes/Research.dunnenote ~/Desktop/Research.json
 ```
 
 - **Markdown**: one `.md` file per page, in folders named after your sections, with pictures
@@ -70,8 +70,8 @@ cargo build --release
   their SHA-256, not embedded). The document shape is versioned (`export_version`).
 
 The reading commands open notebooks read-only and never take DunneNote's lock, so they are safe to
-run while the notebook is open in DunneNote. They change nothing in the notebook. Like any SQLite reader, it
-may leave the database's two standard companion files, `notebook.db-wal` (empty) and
+run while the notebook is open in DunneNote. They change nothing in the notebook. Like any SQLite
+reader, they may leave the database's two standard companion files, `notebook.db-wal` (empty) and
 `notebook.db-shm`, which DunneNote itself creates whenever it opens the notebook.
 
 ## Write
@@ -135,7 +135,17 @@ from newer DunneNote releases open read-only (one version ahead) or are refused.
 are refused with a message to open them once in DunneNote, which upgrades them; this library never
 upgrades a notebook itself.
 
+## Contributing and security
+
+Bug reports, questions about the specification and pull requests to the library are welcome:
+see [CONTRIBUTING.md](CONTRIBUTING.md). Please report security problems privately, as
+[SECURITY.md](SECURITY.md) describes, not in a public issue.
+
 ## Licence
 
-MIT — see [LICENSE](LICENSE). The specification, the schema and the test notebooks are under the
-same licence.
+MIT — see [LICENSE](LICENSE). The specification, the schema, the test notebooks and the test
+vectors are under the same licence.
+
+DunneNote and DunneCorp are trademarks of Dunne, Corp. The licence covers this repository's
+contents. It does not grant the right to use those names or logos, except to say truthfully
+that software reads or writes DunneNote notebooks or follows this specification.

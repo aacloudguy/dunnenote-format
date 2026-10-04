@@ -4,7 +4,34 @@ This project follows [semantic versioning](https://semver.org/). Until 1.0, a mi
 change the library's API. Changes to the format itself are listed in
 [SPEC.md §14](SPEC.md#14-versioning-and-changelog).
 
-## 0.1.0 — first public release
+## Unreleased
+
+**Specification** (DunneNote Format 0.18 draft, revision 2: clarifications, no format change)
+- The sibling position algorithm is written out (Appendix A), and fold v1 names its Unicode
+  versions (17.0 for lowercasing, 16.0 for normalization). Both have language-neutral test
+  vectors in `vectors/`.
+- Rich text lists every allowed value: `numFmt`, font keys, font sizes, colours and links.
+  Sketches state their stroke limits. Calendars state exactly which files are accepted,
+  with one correction: blank lines may come before `BEGIN:VCALENDAR`.
+- How stored JSON is written, page settings defaults, the compatibility rule between schema
+  versions, how anyone can check conformance without DunneNote, and a new §15, Security
+  considerations.
+
+**Library**
+- Fixed: a crafted notebook could make `archive` write a snapshot outside the notebook, or
+  `retrieve` delete one, through a node id that is a path. Node ids must now be UUIDs before
+  they become paths.
+- Fixed: the Markdown export kept `javascript:`, `data:`, `vbscript:` and `blob:` links live.
+  They are now plain text.
+- Fixed: a sketch's export file name is now made safe even when its canvas id is not a UUID.
+- Every connection now opens with SQLite's defensive mode on and `trusted_schema` off.
+- Archive snapshots larger than 64 MiB unpacked are refused before they are read.
+
+**Repository**
+- `SECURITY.md`, `CONTRIBUTING.md` and a trademark note in the README.
+- CI pins its actions to commits and checks the documentation builds without warnings.
+
+## 0.1.0 — 2026-10-02, first public release
 
 Reads and writes notebooks at **DunneNote Format 0.18 (draft)**: schema 18, the schema of
 DunneNote 0.9.

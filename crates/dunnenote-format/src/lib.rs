@@ -14,7 +14,7 @@
 //! ```
 //!
 //! Writing goes through [`Notebook::create`] or [`Notebook::open_writable`] and
-//! [`Notebook::write`], which follow the format's writer rules (see [`write`]):
+//! [`Notebook::write`], which follow the format's writer rules (see [`write`](mod@write)):
 //!
 //! ```no_run
 //! use dunnenote_format::{payload, At, Frame, Notebook, Settings};

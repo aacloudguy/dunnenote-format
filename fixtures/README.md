@@ -22,7 +22,8 @@ creates the lock when it opens a notebook, and readers must not require it.
 
 **Regenerating.** Ids are UUIDv7 and timestamps come from SQLite's clock, so every run produces
 new ids. The notebooks and `expected.json` are therefore always replaced together, and only on
-purpose: after a schema change, or to cover a new feature. From a DunneNote checkout:
+purpose: after a schema change, or to cover a new feature. This is done by the DunneNote team,
+from a checkout of DunneNote's source, which is not public:
 
 ```sh
 cargo run -p dunnenote-api-host --example emit_golden -- /tmp/golden
