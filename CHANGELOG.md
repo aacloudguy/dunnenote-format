@@ -4,7 +4,7 @@ This project follows [semantic versioning](https://semver.org/). Until 1.0, a mi
 change the library's API. Changes to the format itself are listed in
 [SPEC.md §14](SPEC.md#14-versioning-and-changelog).
 
-## Unreleased
+## 0.1.1 — 2026-10-04
 
 **Specification** (DunneNote Format 0.18 draft, revision 2: clarifications, no format change)
 - The sibling position algorithm is written out (Appendix A), and fold v1 names its Unicode

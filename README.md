@@ -8,7 +8,7 @@ folders on your disk: a SQLite database, a content-addressed blob store, and a s
 This project exists so that your notes never depend on one application to stay readable or
 editable.
 
-> **Status: 0.1.0, the first release.** The format is published as **DunneNote Format 0.18 —
+> **Status: 0.1.1.** The format is published as **DunneNote Format 0.18 —
 > draft**. It will be frozen as 1.0 when DunneNote reaches 1.0. Until then every format change is
 > versioned and listed in [SPEC.md §14](SPEC.md#14-versioning-and-changelog), every library
 > change in [CHANGELOG.md](CHANGELOG.md), and this library states exactly which versions it
@@ -45,7 +45,7 @@ To use the library from Rust:
 
 ```toml
 [dependencies]
-dunnenote-format = { git = "https://github.com/aacloudguy/dunnenote-format", tag = "v0.1.0" }
+dunnenote-format = { git = "https://github.com/aacloudguy/dunnenote-format", tag = "v0.1.1" }
 ```
 
 ## Try it

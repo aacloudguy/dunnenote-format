@@ -31,7 +31,7 @@
 //! # Ok::<(), dunnenote_format::Error>(())
 //! ```
 //!
-//! **Status:** 0.1.0, reading and writing DunneNote Format 0.18 (draft). Reading, exporting (JSON, Markdown, CSV) and writing pages, sections,
+//! **Status:** 0.1.1, reading and writing DunneNote Format 0.18 (draft). Reading, exporting (JSON, Markdown, CSV) and writing pages, sections,
 //! rich text, sketches, pictures, canvas groups, tables, calendars, forms, captions, templates,
 //! archiving, tags and metadata are available.
 

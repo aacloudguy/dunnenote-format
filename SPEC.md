@@ -686,7 +686,7 @@ checks in §1 themselves.
 
 ### Changelog
 
-- **0.18 (draft), revision 2** (unreleased): clarifications only; no notebook that was valid
+- **0.18 (draft), revision 2**, 2026-10-04: clarifications only; no notebook that was valid
   becomes invalid. The sibling position algorithm is now written out (Appendix A), and fold v1
   names its Unicode versions; both have test vectors in `vectors/`. The full rich text value
   sets, the sketch stroke limits, the rules for accepting a calendar file, how stored JSON is
