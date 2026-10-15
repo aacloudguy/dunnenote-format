@@ -4,6 +4,22 @@ This project follows [semantic versioning](https://semver.org/). Until 1.0, a mi
 change the library's API. Changes to the format itself are listed in
 [SPEC.md §14](SPEC.md#14-versioning-and-changelog).
 
+## 0.2.0 — unreleased
+
+**Specification** (DunneNote Format 0.19 draft: schema 19)
+- The rich text inline node `canvas_anchor`, a canvas anchored to a position in the text
+  (SPEC §8). Schema 19 has no other change; see SPEC §14.
+
+**Library**
+- `SCHEMA_VERSION` is 19 and `FORMAT_VERSION` is `"0.19.0"`, with `schema/v19.sql` and its
+  `SCHEMA_SHA256`. This is why the version is 0.2.0: the constants are API.
+- The rich text checker accepts `canvas_anchor` with the rules of SPEC §8 (a required non-empty
+  `canvasId`; `placement` `inline` or `float`; numeric offsets with `offsetY` ≥ 0; `wrap`
+  `around` or `top_bottom`; marks allowed) and refuses anything else about it.
+- The version gate moves with the schema: this version reads and writes schema 19, reads 20
+  read-only, and refuses 18 and older until DunneNote has opened the notebook once.
+- The fixtures are re-emitted by DunneNote at schema 19.
+
 ## 0.1.1 — 2026-10-04
 
 **Specification** (DunneNote Format 0.18 draft, revision 2: clarifications, no format change)

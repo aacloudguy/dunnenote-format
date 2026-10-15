@@ -46,7 +46,8 @@ fn json_key() -> impl Strategy<Value = String> {
     prop_oneof![
         3 => prop::sample::select(vec![
             "type", "content", "text", "marks", "attrs", "level", "align", "order", "href",
-            "title", "color", "key", "px", "raw", "format", "canvasId",
+            "title", "color", "key", "px", "raw", "format", "canvasId", "placement", "offsetX",
+            "offsetY", "wrap",
         ])
         .prop_map(String::from),
         1 => "[a-zA-Z]{1,8}",
@@ -64,6 +65,7 @@ fn doc_like() -> impl Strategy<Value = Value> {
         "text",
         "numFmt",
         "notebook_link",
+        "canvas_anchor",
         "hard_break",
         "image",
     ]);

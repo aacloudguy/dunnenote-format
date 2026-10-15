@@ -85,13 +85,13 @@ mod tests {
 
     #[test]
     fn accepts_any_0x_version() {
-        assert!(manifest("dunnenote", "0.18.0").validate().is_ok());
+        assert!(manifest("dunnenote", "0.19.0").validate().is_ok());
         assert!(manifest("dunnenote", "0.1.0").validate().is_ok());
     }
 
     #[test]
     fn rejects_wrong_discriminator_including_the_retired_name() {
-        assert!(manifest("calnote", "0.18.0").validate().is_err());
+        assert!(manifest("calnote", "0.19.0").validate().is_err());
     }
 
     #[test]
@@ -105,7 +105,7 @@ mod tests {
 
     #[test]
     fn rejects_versions_that_are_not_major_minor_patch() {
-        for v in ["0.18", "0.18.0.1", "0.x.y", "0.018.0", " 0.18.0", ""] {
+        for v in ["0.19", "0.19.0.1", "0.x.y", "0.019.0", " 0.19.0", ""] {
             assert!(
                 matches!(
                     manifest("dunnenote", v).validate(),

@@ -8,7 +8,7 @@ use sha2::{Digest, Sha256};
 const TYPE_ORDER: [&str; 4] = ["table", "view", "index", "trigger"];
 const FTS5_SHADOW_SUFFIXES: [&str; 5] = ["_data", "_idx", "_content", "_docsize", "_config"];
 
-/// Same canonical dump DunneNote uses to generate `schema/v18.sql`.
+/// Same canonical dump DunneNote uses to generate `schema/v19.sql`.
 fn dump(conn: &Connection) -> String {
     let mut rows: Vec<(String, String, String)> = conn
         .prepare("SELECT type, name, sql FROM sqlite_master WHERE sql IS NOT NULL AND name NOT LIKE 'sqlite_%'")
@@ -63,7 +63,7 @@ fn created_schema_matches_the_published_file() {
     assert_eq!(
         dump(&conn),
         body,
-        "created schema must equal schema/v18.sql"
+        "created schema must equal schema/v19.sql"
     );
 }
 
@@ -103,6 +103,6 @@ fn published_schema_is_the_pinned_file() {
     let actual = hex::encode(Sha256::digest(SCHEMA_SQL.as_bytes()));
     assert_eq!(
         actual, SCHEMA_SHA256,
-        "schema/v18.sql changed; copy it from DunneNote's docs/format-schema/ and update SCHEMA_SHA256"
+        "schema/v19.sql changed; copy it from DunneNote's docs/format-schema/ and update SCHEMA_SHA256"
     );
 }

@@ -65,7 +65,7 @@ fn build(schema_version: u32) -> Fixture {
     std::fs::write(
         root.join("format.json"),
         format!(
-            r#"{{"format":"dunnenote","format_version":"0.18.0","notebook_id":"{NB}","created_at":1700000000,"created_by":"fixture"}}"#
+            r#"{{"format":"dunnenote","format_version":"0.19.0","notebook_id":"{NB}","created_at":1700000000,"created_by":"fixture"}}"#
         ),
     )
     .unwrap();
@@ -180,7 +180,7 @@ fn build(schema_version: u32) -> Fixture {
 
 #[test]
 fn reads_the_tree_in_sidebar_order() {
-    let f = build(18);
+    let f = build(19);
     let nb = Notebook::open(&f.root).unwrap();
     assert_eq!(nb.compat(), Compat::Exact);
     assert_eq!(nb.manifest().notebook_id, NB);
@@ -202,7 +202,7 @@ fn reads_the_tree_in_sidebar_order() {
 
 #[test]
 fn reads_every_canvas_kind() {
-    let f = build(18);
+    let f = build(19);
     let nb = Notebook::open(&f.root).unwrap();
     let canvases = nb.canvases(PAGE).unwrap();
     let kinds: Vec<CanvasKind> = canvases.iter().map(|c| c.kind).collect();
@@ -252,7 +252,7 @@ fn reads_every_canvas_kind() {
 
 #[test]
 fn reads_tags_with_aliases() {
-    let f = build(18);
+    let f = build(19);
     let nb = Notebook::open(&f.root).unwrap();
     let tags = nb.tags_of("node", PAGE).unwrap();
     assert_eq!(tags.len(), 1);
@@ -262,7 +262,7 @@ fn reads_tags_with_aliases() {
 
 #[test]
 fn a_well_formed_notebook_verifies_clean() {
-    let f = build(18);
+    let f = build(19);
     let nb = Notebook::open(&f.root).unwrap();
     for level in [VerifyLevel::Quick, VerifyLevel::Full] {
         let report = verify(&nb, level).unwrap();
@@ -283,7 +283,7 @@ fn has(report: &dunnenote_format::Report, check: &str, severity: Severity) -> bo
 
 #[test]
 fn verify_detects_refcount_drift() {
-    let f = build(18);
+    let f = build(19);
     open_rw(&f.root)
         .execute("UPDATE blobs SET refcount = refcount + 5", [])
         .unwrap();
@@ -293,7 +293,7 @@ fn verify_detects_refcount_drift() {
 
 #[test]
 fn verify_detects_missing_and_corrupt_blob_files() {
-    let f = build(18);
+    let f = build(19);
     let nb = Notebook::open(&f.root).unwrap();
     let pic = nb.canvas(PICTURE).unwrap();
     let path = nb.blob_path(&pic.source_hash).unwrap();
@@ -323,7 +323,7 @@ fn verify_detects_missing_and_corrupt_blob_files() {
 
 #[test]
 fn verify_detects_a_second_root() {
-    let f = build(18);
+    let f = build(19);
     open_rw(&f.root)
         .execute(
             "INSERT INTO nodes(id, kind, parent_id, name, position, created_at, updated_at) VALUES ('01920000-0000-7000-8000-0000000000ff', 'notebook', NULL, 'Stray', '81', unixepoch(), unixepoch())",
@@ -342,22 +342,22 @@ fn verify_detects_a_second_root() {
 #[test]
 fn version_gate_bands() {
     assert!(matches!(
-        Notebook::open(build(17).root.as_path()),
-        Err(Error::SchemaTooOld { found: 17, .. })
+        Notebook::open(build(18).root.as_path()),
+        Err(Error::SchemaTooOld { found: 18, .. })
     ));
-    let f19 = build(19);
-    let nb = Notebook::open(&f19.root).unwrap();
-    assert_eq!(nb.compat(), Compat::NewerReadOnly { found: 19 });
+    let f20 = build(20);
+    let nb = Notebook::open(&f20.root).unwrap();
+    assert_eq!(nb.compat(), Compat::NewerReadOnly { found: 20 });
     assert!(!nb.compat().writable());
     assert!(matches!(
-        Notebook::open(build(20).root.as_path()),
-        Err(Error::SchemaTooNew { found: 20, .. })
+        Notebook::open(build(21).root.as_path()),
+        Err(Error::SchemaTooNew { found: 21, .. })
     ));
 }
 
 #[test]
 fn opening_never_writes_to_the_notebook() {
-    let f = build(18);
+    let f = build(19);
     let before: Vec<_> = walk_files(&f.root);
     let nb = Notebook::open(&f.root).unwrap();
     verify(&nb, VerifyLevel::Full).unwrap();
@@ -380,7 +380,7 @@ fn opening_never_writes_to_the_notebook() {
 
 #[test]
 fn detects_a_notebook_held_open_by_another_process() {
-    let f = build(18);
+    let f = build(19);
     let lock = std::fs::File::create(f.root.join(".dunnenote.lock")).unwrap();
     let nb = Notebook::open(&f.root).unwrap();
     assert!(!nb.locked_by_another_process().unwrap());
@@ -400,7 +400,7 @@ fn rejects_things_that_are_not_notebooks() {
     ));
     std::fs::write(
         dir.path().join("format.json"),
-        r#"{"format":"calnote","format_version":"0.18.0","notebook_id":"x","created_at":0,"created_by":"x"}"#,
+        r#"{"format":"calnote","format_version":"0.19.0","notebook_id":"x","created_at":0,"created_by":"x"}"#,
     )
     .unwrap();
     std::fs::write(dir.path().join("notebook.db"), b"").unwrap();

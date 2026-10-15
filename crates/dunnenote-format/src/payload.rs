@@ -182,7 +182,7 @@ fn check_block(v: &Value, at: &str) -> Result<()> {
             Ok(())
         }
         "list_item" => Err(bad(at, "a list_item must be inside a list")),
-        "text" | "numFmt" | "notebook_link" => Err(bad(
+        "text" | "numFmt" | "notebook_link" | "canvas_anchor" => Err(bad(
             at,
             "inline content must be inside a paragraph or heading",
         )),
@@ -256,6 +256,10 @@ fn check_inline(v: &Value, at: &str) -> Result<()> {
                 }
             }
         }
+        "canvas_anchor" => {
+            only_keys(obj, &["type", "attrs", "marks"], at)?;
+            check_canvas_anchor(obj, at)?;
+        }
         other => {
             return Err(bad(
                 at,
@@ -264,6 +268,49 @@ fn check_inline(v: &Value, at: &str) -> Result<()> {
         }
     }
     check_marks(obj.get("marks"), at)
+}
+
+/// Format 0.19 §8: a canvas anchored to a position in the text. `canvasId` is required (an anchor
+/// that names no canvas means nothing); every other attribute may be omitted and takes its
+/// default. `offsetY` may not be negative: a float never rises above its own anchor paragraph,
+/// which is what keeps DunneNote's layout a single top-down pass. Marks are allowed, as on any
+/// inline node: the PARENT decides which marks inline content may carry, so a bold selection
+/// spanning an anchor marks it too.
+fn check_canvas_anchor(obj: &Map<String, Value>, at: &str) -> Result<()> {
+    let declared = ["canvasId", "placement", "offsetX", "offsetY", "wrap"];
+    let a = attrs(obj, &declared, at)?.ok_or_else(|| bad(at, "a canvas_anchor needs attrs"))?;
+    match a.get("canvasId") {
+        Some(Value::String(id)) if !id.is_empty() => {}
+        _ => return Err(bad(at, "canvas_anchor canvasId is not a non-empty string")),
+    }
+    if let Some(p) = a.get("placement") {
+        if !matches!(p.as_str(), Some("inline" | "float")) {
+            return Err(bad(
+                at,
+                "canvas_anchor placement is not \"inline\" or \"float\"",
+            ));
+        }
+    }
+    if let Some(w) = a.get("wrap") {
+        if !matches!(w.as_str(), Some("around" | "top_bottom")) {
+            return Err(bad(
+                at,
+                "canvas_anchor wrap is not \"around\" or \"top_bottom\"",
+            ));
+        }
+    }
+    for key in ["offsetX", "offsetY"] {
+        if let Some(v) = a.get(key) {
+            // serde_json never holds NaN or infinity, so any JSON number is finite.
+            let n = v
+                .as_f64()
+                .ok_or_else(|| bad(at, format!("canvas_anchor {key} is not a number")))?;
+            if key == "offsetY" && n < 0.0 {
+                return Err(bad(at, "canvas_anchor offsetY is negative"));
+            }
+        }
+    }
+    Ok(())
 }
 
 fn check_number_format(f: &Value, at: &str) -> Result<()> {
@@ -769,6 +816,52 @@ mod tests {
                     {"type":"list_item","content":[{"type":"paragraph","content":[{"type":"text","marks":[{"type":"text_color","attrs":{"color":"rgba(1, 2, 3, 0.5)"}}],"text":"x"}]}]}]}]}
             ]}
         ]}));
+    }
+
+    #[test]
+    fn accepts_a_canvas_anchor_as_dunnenote_writes_it() {
+        const ID: &str = "01920000-0000-7000-8000-00000000000b";
+        // Inline, with every attribute, as DunneNote's editor serialises it.
+        ok(
+            json!({"type":"doc","content":[{"type":"paragraph","content":[
+                {"type":"text","text":"see "},
+                {"type":"canvas_anchor","attrs":{"canvasId":ID,"placement":"inline","offsetX":0,"offsetY":0,"wrap":"around"}}
+            ]}]}),
+        );
+        // A float with a negative X, the other wrap mode, and a mark from a bold selection.
+        ok(
+            json!({"type":"doc","content":[{"type":"heading","attrs":{"level":2},"content":[
+                {"type":"canvas_anchor","marks":[{"type":"strong"}],"attrs":{"canvasId":ID,"placement":"float","offsetX":-12.5,"offsetY":30,"wrap":"top_bottom"}}
+            ]}]}),
+        );
+        // Only the id: the rest take their defaults.
+        ok(
+            json!({"type":"doc","content":[{"type":"paragraph","content":[
+                {"type":"canvas_anchor","attrs":{"canvasId":ID}}
+            ]}]}),
+        );
+    }
+
+    #[test]
+    fn rejects_a_canvas_anchor_dunnenote_would_never_write() {
+        const ID: &str = "01920000-0000-7000-8000-00000000000b";
+        let at = |a: Value| json!({"type":"doc","content":[{"type":"paragraph","content":[{"type":"canvas_anchor","attrs":a}]}]});
+        err(
+            json!({"type":"doc","content":[{"type":"paragraph","content":[{"type":"canvas_anchor"}]}]}),
+        );
+        err(at(json!({})));
+        err(at(json!({"canvasId":""})));
+        err(at(json!({"canvasId":7})));
+        err(at(json!({"canvasId":ID,"placement":"behind"})));
+        err(at(json!({"canvasId":ID,"wrap":"top-bottom"})));
+        err(at(json!({"canvasId":ID,"offsetY":-1})));
+        err(at(json!({"canvasId":ID,"offsetX":"4"})));
+        err(at(json!({"canvasId":ID,"rotate":90})));
+        err(
+            json!({"type":"doc","content":[{"type":"paragraph","content":[{"type":"canvas_anchor","attrs":{"canvasId":ID},"content":[]}]}]}),
+        );
+        // Inline content, so never directly in the doc.
+        err(json!({"type":"doc","content":[{"type":"canvas_anchor","attrs":{"canvasId":ID}}]}));
     }
 
     #[test]

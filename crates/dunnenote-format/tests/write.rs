@@ -30,7 +30,7 @@ fn a_new_notebook_is_laid_out_as_dunnenote_lays_it_out() {
     assert!(!text.ends_with('\n'));
     let m = nb.manifest();
     let want = format!(
-        "{{\n  \"format\": \"dunnenote\",\n  \"format_version\": \"0.18.0\",\n  \"notebook_id\": \"{}\",\n  \"created_at\": {},\n  \"created_by\": \"dunnenote-format/{}\"\n}}",
+        "{{\n  \"format\": \"dunnenote\",\n  \"format_version\": \"0.19.0\",\n  \"notebook_id\": \"{}\",\n  \"created_at\": {},\n  \"created_by\": \"dunnenote-format/{}\"\n}}",
         m.notebook_id,
         m.created_at,
         env!("CARGO_PKG_VERSION")
@@ -44,7 +44,7 @@ fn a_new_notebook_is_laid_out_as_dunnenote_lays_it_out() {
     assert_eq!(node.position, "80");
     assert_ne!(node.id, m.notebook_id);
     assert!(root.join(".dunnenote.lock").is_file());
-    assert_eq!(count(&root, "PRAGMA user_version"), 18);
+    assert_eq!(count(&root, "PRAGMA user_version"), 19);
     assert_eq!(count(&root, "SELECT count(*) FROM blobs"), 0);
     drop(nb);
     assert!(
@@ -98,18 +98,18 @@ fn the_lock_keeps_out_a_second_writer_but_not_readers() {
 }
 
 #[test]
-fn only_schema_18_is_written() {
+fn only_schema_19_is_written() {
     let dir = TempDir::new().unwrap();
     let (nb, _) = new_notebook(&dir, "Future");
     let root = nb.root().to_path_buf();
     drop(nb);
-    raw(&root).pragma_update(None, "user_version", 19).unwrap();
-    assert!(Notebook::open(&root).is_ok(), "19 still reads");
+    raw(&root).pragma_update(None, "user_version", 20).unwrap();
+    assert!(Notebook::open(&root).is_ok(), "20 still reads");
     assert!(matches!(
         Notebook::open_writable(&root),
         Err(Error::ReadOnly(_))
     ));
-    raw(&root).pragma_update(None, "user_version", 17).unwrap();
+    raw(&root).pragma_update(None, "user_version", 18).unwrap();
     assert!(matches!(
         Notebook::open_writable(&root),
         Err(Error::SchemaTooOld { .. })

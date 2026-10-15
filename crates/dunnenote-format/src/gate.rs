@@ -45,20 +45,20 @@ mod tests {
 
     #[test]
     fn classifies_all_four_bands() {
-        assert_eq!(Compat::classify(18).unwrap(), Compat::Exact);
+        assert_eq!(Compat::classify(19).unwrap(), Compat::Exact);
         assert_eq!(
-            Compat::classify(19).unwrap(),
-            Compat::NewerReadOnly { found: 19 }
+            Compat::classify(20).unwrap(),
+            Compat::NewerReadOnly { found: 20 }
         );
         assert!(matches!(
-            Compat::classify(20),
-            Err(Error::SchemaTooNew { found: 20, .. })
+            Compat::classify(21),
+            Err(Error::SchemaTooNew { found: 21, .. })
         ));
         assert!(matches!(
-            Compat::classify(17),
-            Err(Error::SchemaTooOld { found: 17, .. })
+            Compat::classify(18),
+            Err(Error::SchemaTooOld { found: 18, .. })
         ));
         assert!(Compat::Exact.writable());
-        assert!(!Compat::NewerReadOnly { found: 19 }.writable());
+        assert!(!Compat::NewerReadOnly { found: 20 }.writable());
     }
 }

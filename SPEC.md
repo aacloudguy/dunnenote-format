@@ -1,7 +1,7 @@
-# DunneNote Format 0.18 — draft
+# DunneNote Format 0.19 — draft
 
 > **Draft.** This is a 0.x draft, written from DunneNote's implementation. It is normative for
-> notebooks at schema 18, and it may change in later 0.x versions (§14). It becomes 1.0 when
+> notebooks at schema 19, and it may change in later 0.x versions (§14). It becomes 1.0 when
 > DunneNote reaches 1.0.
 
 The key words MUST, MUST NOT, SHOULD and MAY are to be interpreted as described in RFC 2119.
@@ -29,7 +29,7 @@ The key words MUST, MUST NOT, SHOULD and MAY are to be interpreted as described 
 
 This document describes a DunneNote notebook on disk: a `.dunnenote` folder (§2) holding a SQLite
 database (§3, §4), a content-addressed blob store (§6) and a manifest. It is enough to read
-every notebook DunneNote writes at schema 18 and to change one so that DunneNote opens it with no
+every notebook DunneNote writes at schema 19 and to change one so that DunneNote opens it with no
 loss. It does not describe DunneNote's user interface, sync, backup or encryption.
 
 There are two levels of conformance:
@@ -41,7 +41,7 @@ There are two levels of conformance:
   out, rather than as live content, and MUST NOT treat form carriers (§9) as orphans.
 - **Writer.** A Writer is a Reader that also changes notebooks or creates them. It MUST follow
   every rule in §2–§12, and all of them are gathered in the [Writer checklist](#13-writer-checklist).
-  A new notebook is created with the schema in §4, `PRAGMA user_version = 18`, a single notebook
+  A new notebook is created with the schema in §4, `PRAGMA user_version = 19`, a single notebook
   root node, and the manifest described in §2.
 
 The notebooks in `fixtures/` were produced by DunneNote itself and are part of this
@@ -81,7 +81,7 @@ releases, and Writers MUST NOT change it.
   and a Reader ignores any others:
   - `format`: always `"dunnenote"`;
   - `format_version`: the version the notebook was *created* at, `"0.<schema>.0"`, for example
-    `"0.18.0"`;
+    `"0.19.0"`;
   - `notebook_id`: the notebook's permanent identity, a UUID (§5), unchanged when the folder is
     moved or renamed;
   - `created_at`: Unix seconds;
@@ -95,7 +95,7 @@ releases, and Writers MUST NOT change it.
   per-notebook preferences, such as whether a new page starts with a heading. Readers MAY
   ignore it. Writers MUST NOT change it.
 - **`attachments/<ext>/`** holds files named by DunneNote, lowercased, grouped by extension. At
-  schema 18 the only such files are form answers, `attachments/<ext>/form-answers-<page id>.<ext>`
+  schema 19 the only such files are form answers, `attachments/<ext>/form-answers-<page id>.<ext>`
   (`ext` is `json`, `md` or `csv`). Writers MUST NOT change or delete them.
 - **The lock file.** `.dunnenote.lock` is an empty file. The process that has the notebook open
   for writing holds an exclusive advisory lock on it (`flock` on Unix, `LockFileEx` on Windows).
@@ -116,23 +116,23 @@ releases, and Writers MUST NOT change it.
   an empty `notebook.db-wal` and a `notebook.db-shm` behind. DunneNote creates the same files and
   they are harmless.
 - **The version gate.** `PRAGMA user_version` is the notebook's schema version. This document is
-  schema **18**.
+  schema **19**.
 
   | `user_version` | Reader | Writer |
   | --- | --- | --- |
-  | 18 | reads | writes |
-  | 19 | reads, ignoring columns and tables it does not know | MUST NOT write |
-  | 20 or more | MUST refuse | MUST refuse |
-  | less than 18 | MUST refuse; DunneNote upgrades it when it next opens the notebook | MUST refuse, and MUST NOT upgrade it |
+  | 19 | reads | writes |
+  | 20 | reads, ignoring columns and tables it does not know | MUST NOT write |
+  | 21 or more | MUST refuse | MUST refuse |
+  | less than 19 | MUST refuse; DunneNote upgrades it when it next opens the notebook | MUST refuse, and MUST NOT upgrade it |
 
   A Reader that refuses SHOULD say why: newer notebooks need a newer reader, and older ones need
-  to be opened once in DunneNote. Reading schema 19 is safe because of the compatibility rule
+  to be opened once in DunneNote. Reading schema 20 is safe because of the compatibility rule
   in §14: one schema step only adds things a Reader can ignore.
 - **The manifest gate.** A Reader MUST refuse a notebook whose `format.json` is missing, is not
   valid JSON, or lacks any of its five fields (§2); whose `format` is not `"dunnenote"`; or whose
   `format_version` is not a semantic version (`major.minor.patch`, each a number without leading
   zeros, optionally followed by `-pre-release` and `+build` parts, as semver.org 2.0 defines)
-  with a major version of 0. So `"0.18"`, `"0.18.0.1"` and `"0.x.y"` are refused. A Reader MAY
+  with a major version of 0. So `"0.19"`, `"0.19.0.1"` and `"0.x.y"` are refused. A Reader MAY
   also refuse a `notebook_id` that is not 36 characters (§5). A notebook whose
   `format_version` is older than `user_version` is normal: it was created at that version and
   upgraded since.
@@ -143,10 +143,10 @@ releases, and Writers MUST NOT change it.
 
 ## 4. Schema
 
-`schema/v18.sql` is normative. It is generated from a notebook freshly created by DunneNote, and
-its SHA-256 is `dcead3a7cff689b43691fc41d2ab4611ce3355d7a2b8f37152e8b7b95186a433`. A Writer
+`schema/v19.sql` is normative. It is generated from a notebook freshly created by DunneNote, and
+its SHA-256 is `f244a14836d8ed86dbf76cf349e1ed3912caa07363da099fa1e36c06c65ca654`. A Writer
 creating a notebook MUST apply it unchanged, in one transaction, to an empty database, then set
-`PRAGMA user_version = 18`. Every ordinary table is `STRICT` (the two FTS5 virtual tables of §12
+`PRAGMA user_version = 19`. Every ordinary table is `STRICT` (the two FTS5 virtual tables of §12
 cannot be), and there are no views. The column checks,
 foreign keys (most with `ON DELETE CASCADE`) and triggers in the file are part of the format; the
 sections below give their meaning.
@@ -281,6 +281,16 @@ Triggers a Writer relies on:
     - `text`: `text`, a non-empty string;
     - `notebook_link`: `canvasId`, `labelSnapshot`, `notebookId` (empty for this notebook) and
       `notebookLabelSnapshot`, all strings;
+    - `canvas_anchor` (schema 19), a canvas anchored to this position in the text so that it
+      moves with the text: *required* `attrs` with *required* `canvasId` (a non-empty string,
+      the anchored canvas's `canvas_instances.id`); `placement` (`inline`, the canvas sits in the
+      line like a large character, or `float`, the text wraps around it; default `inline`);
+      `offsetX` (a number, default 0) and `offsetY` (a number ≥ 0, default 0), the float's
+      offset in pixels from its anchor paragraph's left edge and top, so a float never rises
+      above its own paragraph; and `wrap` (`around` or `top_bottom`, default `around`), how text
+      flows past a float. No content. The canvas's size is its `canvas_instances` row's; the
+      anchor never stores it. A Reader that does not draw anchored canvases MAY treat the node
+      as an empty inline atom: it contributes no text;
     - `numFmt`, a formatted number: `raw` (a string, the number as typed) and `format`. `format`
       is an object with *required* `style` (`decimal`, `currency` or `percent`) and *required*
       `locale` (a string), and optional `currency` (three upper-case ISO 4217 letters),
@@ -612,7 +622,7 @@ A picture may have several captions.
 
 A conforming **Writer**:
 
-1. Writes only notebooks whose `PRAGMA user_version` is exactly 18 and whose manifest major
+1. Writes only notebooks whose `PRAGMA user_version` is exactly 19 and whose manifest major
    version is 0. It opens a notebook one version newer read-only, refuses anything newer, and
    refuses older notebooks with advice to open them once in DunneNote.
 2. Takes an exclusive lock on `.dunnenote.lock` (`flock` / `LockFileEx`, creating the file if
@@ -652,7 +662,7 @@ checks in §1 themselves.
 ## 14. Versioning and changelog
 
 - **Two numbers.** `PRAGMA user_version` is the schema a notebook is at now (§3). The
-  specification is named after it: "DunneNote Format 0.18" describes schema 18. `format.json`'s
+  specification is named after it: "DunneNote Format 0.19" describes schema 19. `format.json`'s
   `format_version` records the version a notebook was created at and is informational, apart
   from its major version (§3).
 - **Draft until 1.0.** While DunneNote is before 1.0, the format is a 0.x draft. A DunneNote
@@ -686,6 +696,17 @@ checks in §1 themselves.
 
 ### Changelog
 
+- **0.19 (draft)**, unreleased: schema 19, the schema of DunneNote's anchored-canvases release.
+  - **Added** the rich text inline node `canvas_anchor` (§8): a canvas anchored to a position
+    in the text.
+  - Schema 19 has **no other change**: `schema/v19.sql` differs from `schema/v18.sql` only in
+    its version lines. The step exists so that a schema-18 Reader reads a schema-19 notebook as
+    *newer* (§3) and a schema-18 Writer refuses to write it.
+  - Readers of schema 18 meet `canvas_anchor` as an unknown inline node, which §14's tolerance
+    rule lets them ignore. DunneNote 0.9.3 and later shows such a canvas read-only, with a
+    placeholder where the anchor is.
+  - Under the version gate (§3), a Reader for schema 19 refuses schema-18 notebooks until
+    DunneNote has opened them once.
 - **0.18 (draft), revision 2**, 2026-10-04: clarifications only; no notebook that was valid
   becomes invalid. The sibling position algorithm is now written out (Appendix A), and fold v1
   names its Unicode versions; both have test vectors in `vectors/`. The full rich text value

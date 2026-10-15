@@ -8,7 +8,7 @@ folders on your disk: a SQLite database, a content-addressed blob store, and a s
 This project exists so that your notes never depend on one application to stay readable or
 editable.
 
-> **Status: 0.1.1.** The format is published as **DunneNote Format 0.18 —
+> **Status: 0.2.0 (unreleased).** The format is published as **DunneNote Format 0.19 —
 > draft**. It will be frozen as 1.0 when DunneNote reaches 1.0. Until then every format change is
 > versioned and listed in [SPEC.md §14](SPEC.md#14-versioning-and-changelog), every library
 > change in [CHANGELOG.md](CHANGELOG.md), and this library states exactly which versions it
@@ -16,7 +16,7 @@ editable.
 
 | Piece | Status |
 | --- | --- |
-| Canonical schema (`schema/v18.sql`), generated from DunneNote | available |
+| Canonical schema (`schema/v19.sql`), generated from DunneNote | available |
 | Library: open, version gate, read every canvas kind, tags, blobs; verify | available |
 | Library: export to JSON, Markdown and CSV | available |
 | Library: create notebooks; write sections, pages, rich text, sketches, pictures, picture markup, canvas groups | available |
@@ -26,7 +26,7 @@ editable.
 | Library: calendars (`.ics` import with events and attendees, as DunneNote reads them) | available |
 | `dnfmt inspect`, `ls`, `cat`, `verify`, `export` | available |
 | `dnfmt new`, `add-section`, `add-page`, `add-canvas rich-text\|sketch\|picture\|table\|calendar`, `table`, `form`, `caption`, `template`, `archive`, `retrieve`, `tag`, `meta` | available |
-| `SPEC.md` — the full specification, with a writer checklist | available (0.18 draft) |
+| `SPEC.md` — the full specification, with a writer checklist | available (0.19 draft) |
 | Golden test notebooks produced by DunneNote itself ([fixtures](fixtures/README.md)) | available |
 | Test vectors for sibling positions and fold v1, for implementations in any language ([vectors](vectors/)) | available |
 
@@ -130,7 +130,7 @@ Editing follows the format's [writer checklist](SPEC.md#13-writer-checklist):
 
 ## Supported versions
 
-This library reads and writes notebooks at **schema 18** (`format_version` `0.18.0`). Notebooks
+This library reads and writes notebooks at **schema 19** (`format_version` `0.19.0`). Notebooks
 from newer DunneNote releases open read-only (one version ahead) or are refused. Older notebooks
 are refused with a message to open them once in DunneNote, which upgrades them; this library never
 upgrades a notebook itself.

@@ -30,5 +30,5 @@ cargo run -p dunnenote-api-host --example emit_golden -- /tmp/golden
 rsync -a --delete --exclude .dunnenote.lock --exclude README.md /tmp/golden/ fixtures/
 ```
 
-Emitted by DunneNote 0.9.0, schema 18 (`format_version` 0.18.0). Licence: MIT, like the rest of
+Emitted by DunneNote (feature/anchored-canvases, 0.9.3 + schema 19), schema 19 (`format_version` 0.19.0). Licence: MIT, like the rest of
 this repository.
